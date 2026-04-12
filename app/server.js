@@ -24,6 +24,10 @@ let manualOverride = false;   // jika true, auto-off tidak mematikan relay
 // DATA TRACKING (NOW PLAYING)
 let isAudioPlaying = false;
 let activeAudioName = null;
+let activeAudioProcess = null;
+let activeFfmpegProcess = null;
+let liveMicProcess = null;
+let liveMicFfmpeg = null;
 
 // matikan
 // printf '\x00\xFD\x01\x00\x00\x00\x00\x00' | sudo tee /dev/hidraw1 > /dev/null
@@ -554,11 +558,28 @@ app.post('/play', requireAuth, (req, res) => {
 
 app.post('/stop', requireAuth, (req, res) => {
   try {
-    spawn('pkill', ['-f', 'aplay']);
-    spawn('pkill', ['-f', 'ffmpeg']);
+    if (activeAudioProcess) activeAudioProcess.kill();
+    if (activeFfmpegProcess) activeFfmpegProcess.kill();
+    if (liveMicProcess) liveMicProcess.kill();
+    if (liveMicFfmpeg) liveMicFfmpeg.kill();
+    
+    // Sebagai perlindungan ganda (safeguard) jika proses menggantung
+    setTimeout(() => {
+      if (isAudioPlaying) {
+        spawn('pkill', ['-f', 'aplay']);
+        spawn('pkill', ['-f', 'ffmpeg']);
+      }
+    }, 1000);
     
     isAudioPlaying = false;
     activeAudioName = null;
+    activeAudioProcess = null;
+    activeFfmpegProcess = null;
+    liveMicProcess = null;
+    liveMicFfmpeg = null;
+    
+    if (!manualOverride) relayOff();
+
     addLog('audio', `Semua audio dihentikan manual`, req.session.user.username);
 
     res.redirect('/dashboard?stop=success');
@@ -836,16 +857,13 @@ const playSound = async (filename, user = 'System') => {
       console.log("ℹ️ Manual override aktif, amplifier tidak dinyalakan otomatis");
     }
 
-    let proc;
-
     if (filename.toLowerCase().endsWith('.wav')) {
-      proc = spawn('aplay', ['-D', 'plughw:0,0', filePath]);
+      activeAudioProcess = spawn('aplay', ['-D', 'plughw:0,0', filePath]);
     } else if (filename.toLowerCase().endsWith('.mp3')) {
-      const ffmpeg = spawn('ffmpeg', ['-i', filePath, '-f', 'wav', '-loglevel', 'quiet', '-']);
-      const aplay = spawn('aplay', ['-D', 'plughw:0,0', '-q']);
-      ffmpeg.stdout.pipe(aplay.stdin);
-      ffmpeg.stderr.resume();
-      proc = aplay;
+      activeFfmpegProcess = spawn('ffmpeg', ['-i', filePath, '-f', 'wav', '-loglevel', 'quiet', '-']);
+      activeAudioProcess = spawn('aplay', ['-D', 'plughw:0,0', '-q']);
+      activeFfmpegProcess.stdout.pipe(activeAudioProcess.stdin);
+      activeFfmpegProcess.stderr.resume();
     } else {
       console.error(`❌ Format file tidak didukung: ${filename}`);
       isAudioPlaying = false;
@@ -860,23 +878,35 @@ const playSound = async (filename, user = 'System') => {
       }
       isAudioPlaying = false;
       activeAudioName = null;
+      activeAudioProcess = null;
+      activeFfmpegProcess = null;
       if (!manualOverride) relayOff();
     };
 
-    if (proc) {
-      proc.on('error', handleError);
+    if (activeAudioProcess) {
+      activeAudioProcess.on('error', handleError);
 
-      proc.on('close', (code) => {
+      activeAudioProcess.on('close', (code) => {
         console.log(`✅ Audio selesai (exit code: ${code})`);
         isAudioPlaying = false;
         activeAudioName = null;
+        activeAudioProcess = null;
+        activeFfmpegProcess = null;
         if (!manualOverride) {
           relayOff(); // 🔌 MATIKAN AMPLI setelah selesai (jika bukan manual)
         }
       });
     }
+    
+    if (activeFfmpegProcess) {
+       activeFfmpegProcess.on('error', handleError);
+    }
   } catch (err) {
     console.error('❌ Error di playSound:', err);
+    isAudioPlaying = false;
+    activeAudioName = null;
+    activeAudioProcess = null;
+    activeFfmpegProcess = null;
     if (!manualOverride) relayOff();
   }
 };
@@ -917,8 +947,6 @@ app.get('/', (req, res) => {
 // =======================
 // LIVE MICROPHONE (PA)
 // =======================
-let liveMicProcess = null;
-let liveMicFfmpeg = null;
 
 io.on('connection', (socket) => {
   socket.on('start-mic', async () => {
@@ -956,35 +984,38 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('stop-mic', () => {
-    console.log('🛑 Menghentikan siaran langsung');
+  const cleanupMic = () => {
     if (liveMicFfmpeg) {
-      liveMicFfmpeg.stdin.end();
+      try { liveMicFfmpeg.stdin.end(); } catch (e) {}
       liveMicFfmpeg.kill();
+      liveMicFfmpeg = null;
     }
     if (liveMicProcess) {
-       spawn('pkill', ['-f', 'aplay']); // Force kill aplay to clear buffer
-       liveMicProcess.kill();
+      liveMicProcess.kill();
+      liveMicProcess = null;
     }
     
-    liveMicFfmpeg = null;
-    liveMicProcess = null;
-    isAudioPlaying = false;
-    activeAudioName = null;
-    
-    if (!manualOverride) relayOff();
-    addLog('audio', 'Pengumuman langsung selesai', 'Admin');
-  });
-
-  socket.on('disconnect', () => {
-    if (liveMicFfmpeg || liveMicProcess) {
-      // Emergency cleanup
-      if (liveMicFfmpeg) liveMicFfmpeg.kill();
-      if (liveMicProcess) liveMicProcess.kill();
+    if (isAudioPlaying && activeAudioName === "SIARAN LANGSUNG") {
       isAudioPlaying = false;
       activeAudioName = null;
       if (!manualOverride) relayOff();
     }
+  };
+
+  socket.on('stop-mic', () => {
+    console.log('🛑 Menghentikan siaran langsung');
+    cleanupMic();
+    addLog('audio', 'Pengumuman langsung selesai', 'Admin');
+  });
+
+  socket.on('error', (err) => {
+    console.error('Socket error:', err);
+    cleanupMic();
+  });
+
+  socket.on('disconnect', () => {
+    console.log('⚠️ Socket disconnected, membersihkan mic...');
+    cleanupMic();
   });
 });
 
