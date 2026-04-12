@@ -1,6 +1,16 @@
-# 🔔 SIS-INV: Sistem Bel Sekolah & Pengumuman (PA System)
+# 🔔 Sistem Bel Sekolah & Pengumuman (PA System)
 
-Sistem Bel Sekolah pintar ini mendukung penjadwalan audio otomatis, audisi riwayat, dan fitur **Pengumuman Langsung (Live Microphone)**. Dokumen ini menjelaskan cara menangani izin mikrofon di berbagai skenario akses.
+Sistem Bel Sekolah pintar ini mendukung penjadwalan audio otomatis, audisi riwayat, dan fitur **Pengumuman Langsung (Live Microphone)**. Dokumen ini menjelaskan cara instalasi dan penanganan izin mikrofon.
+
+---
+
+## ⚙️ Persiapan awal (.env)
+Sebelum menjalankan aplikasi, Anda perlu menyiapkan file konfigurasi environment:
+1. Copy file `.env.example` menjadi `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+2. Buka file `.env` dan isi nilai `SESSION_SECRET` serta `TUNNEL_TOKEN` (untuk Cloudflare Tunnel).
 
 ---
 
