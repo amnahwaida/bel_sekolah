@@ -1,0 +1,124 @@
+<%- include('partials/header') %>
+
+<div class="max-w-6xl mx-auto mt-8 px-6 pb-20">
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h1 class="text-3xl font-black text-slate-800 dark:text-slate-100 transition-colors flex items-center gap-3">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 text-indigo-600">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        Riwayat Aktivitas
+      </h1>
+      <p class="text-slate-500 dark:text-slate-400 mt-1 ml-11">Log audit sistem dan pemutaran audio otomatis.</p>
+    </div>
+    <div class="flex gap-3">
+        <a href="/dashboard" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 px-5 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 border border-slate-200 dark:border-slate-700 shadow-sm">
+           Kembali
+        </a>
+    </div>
+  </div>
+
+  <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden transition-all">
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead class="bg-slate-50 dark:bg-slate-950/50 border-b border-slate-100 dark:border-slate-800">
+          <tr>
+            <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Waktu</th>
+            <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Kategori</th>
+            <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Pesan</th>
+            <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 text-right">User</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-50 dark:divide-slate-800/50">
+          <% if (logs && logs.length > 0) { %>
+            <% logs.forEach(log => { %>
+              <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-xs font-bold text-slate-700 dark:text-slate-300 transition-colors">
+                    <%= new Date(log.timestamp).toLocaleDateString('id-ID') %>
+                  </div>
+                  <div class="text-[10px] text-slate-400 dark:text-slate-500 transition-colors">
+                    <%= new Date(log.timestamp).toLocaleTimeString('id-ID') %>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <% 
+                    let badgeClass = 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400';
+                    if (log.type === 'auth') badgeClass = 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400';
+                    if (log.type === 'audio') badgeClass = 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400';
+                    if (log.type === 'system') badgeClass = 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400';
+                  %>
+                  <span class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider <%= badgeClass %>">
+                    <%= log.type %>
+                  </span>
+                </td>
+                <td class="px-6 py-4">
+                  <div class="text-sm font-medium text-slate-600 dark:text-slate-400 transition-colors">
+                    <%= log.message %>
+                  </div>
+                </td>
+                <td class="px-6 py-4 text-right whitespace-nowrap">
+                  <div class="inline-flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700">
+                    <div class="w-2 h-2 rounded-full <%= log.user === 'System' ? 'bg-indigo-400' : 'bg-primary-500' %>"></div>
+                    <span class="text-[10px] font-black uppercase tracking-tight text-slate-600 dark:text-slate-400"><%= log.user %></span>
+                  </div>
+                </td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <tr>
+              <td colspan="4" class="px-6 py-20 text-center text-slate-400 dark:text-slate-600 italic">
+                Belum ada data riwayat yang tercatat.
+              </td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination Controls (BARU) -->
+    <% if (totalPages > 1) { %>
+      <div class="px-6 py-6 bg-slate-50/50 dark:bg-slate-950/30 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between transition-all">
+        <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">
+          Menampilkan <span class="font-bold text-slate-800 dark:text-slate-200"><%= logs.length %></span> dari <span class="font-bold text-slate-800 dark:text-slate-200"><%= totalEntries %></span> riwayat
+        </div>
+        
+        <div class="flex items-center gap-2">
+          <% if (currentPage > 1) { %>
+            <a href="/logs?page=<%= currentPage - 1 %>" class="p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 hover:border-primary-200 dark:hover:border-primary-900 transition-all shadow-sm group">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4 group-active:-translate-x-1 transition-transform">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+              </svg>
+            </a>
+          <% } else { %>
+            <div class="p-2 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 text-slate-200 dark:text-slate-700 cursor-not-allowed">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+              </svg>
+            </div>
+          <% } %>
+
+          <div class="px-4 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            <span class="text-xs font-black tracking-tight text-slate-600 dark:text-slate-400 italic">Halaman <span class="text-primary-500 not-italic"><%= currentPage %></span> dari <span class="text-slate-800 dark:text-slate-200 not-italic"><%= totalPages %></span></span>
+          </div>
+
+          <% if (currentPage < totalPages) { %>
+            <a href="/logs?page=<%= currentPage + 1 %>" class="p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 hover:border-primary-200 dark:hover:border-primary-900 transition-all shadow-sm group">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4 group-active:translate-x-1 transition-transform">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+              </svg>
+            </a>
+          <% } else { %>
+            <div class="p-2 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 text-slate-200 dark:text-slate-700 cursor-not-allowed">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+              </svg>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

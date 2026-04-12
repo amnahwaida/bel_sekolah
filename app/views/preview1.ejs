@@ -1,0 +1,31 @@
+<%- include('layout') %>
+<div class="max-w-2xl mx-auto bg-white p-6 rounded shadow text-center mt-6">
+  <h2 class="text-2xl font-bold mb-4">🎧 Preview: <span class="text-primary"><%= file %></span></h2>
+  
+  <audio controls class="w-full mb-4">
+    <source src="/music/<%= encodeURIComponent(file) %>" type="audio/mpeg">
+    Browser tidak mendukung audio.
+  </audio>
+
+  <div class="flex justify-center gap-3">
+    <form method="POST" action="/stop" class="inline"> 
+      <button type="submit" class="bg-orange-500 text-white py-2 px-6 rounded hover:bg-orange-600" 
+        onclick="return confirm("Hentikan pemutaran sekarang?")"> 
+        🛑 Stop 
+      </button> 
+    </form>
+    <form method="POST" action="/play" class="inline">
+      <input type="hidden" name="file" value="<%= file %>" />
+      <button type="submit" class="bg-primary text-white py-2 px-6 rounded hover:bg-blue-700 flex items-center">
+        <span>▶️ Putar di Speaker STB</span>
+      </button>
+    </form>
+    <a href="/dashboard" class="py-2 px-4 bg-gray-200 rounded hover:bg-gray-300">← Kembali</a>
+  </div>
+</div>
+
+<script>
+document.querySelector('form').onsubmit = function() {
+  alert('🔊 Perintah dikirim ke STB...\nCek speaker USB Anda dalam 2 detik!');
+};
+</script>

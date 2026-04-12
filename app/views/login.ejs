@@ -1,0 +1,80 @@
+<%- include('partials/header') %>
+
+<div class="max-w-md mx-auto mt-20">
+  <div class="bg-white dark:bg-slate-900 p-10 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-2xl shadow-slate-200/50 dark:shadow-none relative overflow-hidden transition-all">
+    <div class="absolute -right-10 -top-10 w-32 h-32 bg-primary-500 rounded-full opacity-5 blur-2xl"></div>
+    <div class="absolute -left-10 -bottom-10 w-32 h-32 bg-accent rounded-full opacity-5 blur-2xl"></div>
+
+    <div class="relative z-10">
+      <div class="bg-primary-50 dark:bg-primary-900/20 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 mx-auto shadow-inner">
+        <!-- BellIcon (Solid) -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8 text-primary-600 dark:text-primary-400">
+          <path fill-rule="evenodd" d="M5.25 9a6.75 6.75 0 0113.5 0v.75c0 2.123.8 4.057 2.118 5.52a.75.75 0 01-.297 1.206c-1.544.57-3.16.99-4.831 1.243a3.75 3.75 0 11-7.48 0 24.585 24.585 0 01-4.831-1.244.75.75 0 01-.298-1.205A8.217 8.217 0 005.25 9.75V9zm4.502 8.9a2.25 2.25 0 104.496 0 25.057 25.057 0 01-4.496 0z" clip-rule="evenodd" />
+        </svg>
+      </div>
+      <h1 class="text-3xl font-black text-center mb-2 text-slate-800 dark:text-slate-100 tracking-tight transition-colors">Selamat Datang</h1>
+      <p class="text-slate-400 dark:text-slate-500 text-center mb-10 text-sm font-medium transition-colors">Masuk ke Sistem Bel Sekolah</p>
+      
+      <% if (locals.error) { %>
+        <div class="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400 p-4 rounded-2xl mb-8 text-center text-sm font-bold animate-shake">
+          <%= error %>
+        </div>
+      <% } %>
+      
+      <form method="POST" action="/login" class="space-y-6">
+        <div class="space-y-1.5">
+          <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 px-1 transition-colors">Username</label>
+          <div class="relative">
+             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600 transition-colors">
+               <!-- UserIcon (Outline) -->
+               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+               </svg>
+             </span>
+             <input type="text" name="username" required 
+                    class="w-full pl-11 pr-4 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all font-semibold text-slate-700 dark:text-slate-300" 
+                    placeholder="smamsa" />
+          </div>
+        </div>
+        
+        <div class="space-y-1.5">
+          <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 px-1 transition-colors">Password</label>
+          <div class="relative">
+             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600 transition-colors">
+                <!-- KeyIcon (Outline) -->
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+                </svg>
+             </span>
+             <input type="password" name="password" required 
+                    class="w-full pl-11 pr-4 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all font-semibold text-slate-700 dark:text-slate-300" 
+                    placeholder="••••••••" />
+          </div>
+        </div>
+        
+        <button type="submit" 
+                class="w-full bg-slate-900 dark:bg-primary-600 border-b-4 border-slate-950 dark:border-primary-700 hover:bg-primary-600 dark:hover:bg-primary-500 hover:border-primary-700 dark:hover:border-primary-600 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg shadow-slate-200 dark:shadow-none transition-all active:scale-[0.98] active:border-b-0 mt-4">
+          Masuk ke Sistem
+        </button>
+      </form>
+      
+      <div class="mt-10 pt-8 border-t border-slate-100 dark:border-slate-800 text-center transition-colors">
+        <div class="inline-block px-4 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-full transition-colors">
+          <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest transition-colors">Akses Default Admin</p>
+        </div>
+        <p class="mt-2 text-xs text-slate-400 dark:text-slate-500 font-medium transition-colors">User: <span class="text-slate-600 dark:text-slate-300">smamsa</span> • Pass: <span class="text-slate-600 dark:text-slate-300">smamsa12</span></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+  }
+  .animate-shake { animation: shake 0.4s ease-in-out; }
+</style>
+
+<%- include('partials/footer') %>

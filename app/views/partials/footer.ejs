@@ -1,0 +1,30 @@
+  </main>
+  
+  <script>
+    // Toggle import form
+    function toggleImportForm() {
+      const form = document.getElementById('importForm');
+      if (form) {
+        form.classList.toggle('hidden');
+      }
+    }
+    
+    // Confirm before delete
+    function confirmDelete(action) {
+      return confirm('Apakah Anda yakin ingin menghapus?');
+    }
+    
+    // Auto-hide success/error messages after 5 seconds
+    document.addEventListener('DOMContentLoaded', function() {
+      const messages = document.querySelectorAll('.animate-fade-in');
+      messages.forEach(msg => {
+        setTimeout(() => {
+          msg.style.opacity = '0';
+          msg.style.transition = 'opacity 0.3s';
+          setTimeout(() => msg.remove(), 300);
+        }, 5000);
+      });
+    });
+  </script>
+</body>
+</html>

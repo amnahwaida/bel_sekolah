@@ -1,0 +1,33 @@
+
+services:
+  bel-sekolah:
+    build: .
+    container_name: bel_sekolah
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./app:/app/app
+      - ./music:/app/music
+    environment:
+      - TZ=Asia/Jakarta
+      - SESSION_SECRET=${SESSION_SECRET}
+    devices:
+#      - /dev/hidraw1:/dev/hidraw1  # 🔑 USB Relay device (BARU!)
+      - /dev/snd:/dev/snd          # ✅ wajib
+#    user: "1000:1000"              # ✅ sesuaikan dengan UID/GID user vannyezha
+    networks:
+      - belmuhi
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${TUNNEL_TOKEN}
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    networks:
+      - belmuhi
+networks:
+  belmuhi:
+    driver: bridge

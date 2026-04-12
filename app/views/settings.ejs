@@ -1,0 +1,175 @@
+<%- include('partials/header') %>
+
+<div class="max-w-4xl mx-auto mt-8 px-6 pb-20">
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h1 class="text-3xl font-black text-slate-800 dark:text-slate-100 transition-colors flex items-center gap-3">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 text-primary-600">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.894.15c.542.09.94.56.94 1.109v1.094c0 .55-.398 1.02-.94 1.11l-.894.149c-.424.07-.764.383-.929.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527a1.125 1.125 0 01-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.108-1.204l-.526-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        Pengaturan Sistem
+      </h1>
+      <p class="text-slate-500 dark:text-slate-400 mt-1 ml-11">Kelola keamanan dan akses pengguna.</p>
+    </div>
+    <a href="/dashboard" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 px-5 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 border border-slate-200 dark:border-slate-700 shadow-sm">
+       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+         <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+       </svg>
+       Kembali ke Dashboard
+    </a>
+  </div>
+
+  <% if (locals.msg) { %>
+    <div class="<%= type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800/50 dark:text-emerald-400' : 'bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-900/20 dark:border-rose-800/50 dark:text-rose-400' %> border p-4 rounded-2xl mb-8 shadow-sm flex items-center gap-3 animate-fade-in transition-all">
+      <div class="p-1.5 rounded-full <%= type === 'success' ? 'bg-emerald-500' : 'bg-rose-500' %> text-white">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+          <% if (type === 'success') { %>
+            <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+          <% } else { %>
+            <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+          <% } %>
+        </svg>
+      </div>
+      <span class="font-bold text-sm tracking-tight"><%= msg %></span>
+    </div>
+  <% } %>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <!-- Ganti Password -->
+    <div class="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none transition-all flex flex-col h-full relative overflow-hidden">
+      <div class="absolute -right-10 -top-10 w-32 h-32 bg-primary-500 rounded-full opacity-5 blur-2xl"></div>
+      
+      <div class="relative z-10 flex flex-col h-full">
+        <h2 class="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2 flex items-center gap-2 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-primary-500">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+          </svg>
+          Ubah Kata Sandi
+        </h2>
+        <p class="text-slate-400 dark:text-slate-500 text-xs mb-8 transition-colors">Setelah diubah, Anda perlu login ulang pada sesi berikutnya.</p>
+        
+        <form action="/settings/password" method="POST" class="space-y-6 mt-auto">
+          <div class="space-y-1.5">
+            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 px-1 transition-colors">Sandi Saat Ini</label>
+            <input type="password" name="currentPassword" required class="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all font-semibold text-slate-700 dark:text-slate-300" />
+          </div>
+          <div class="space-y-1.5">
+            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 px-1 transition-colors">Sandi Baru</label>
+            <input type="password" name="newPassword" required class="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all font-semibold text-slate-700 dark:text-slate-300" />
+          </div>
+          <div class="space-y-1.5">
+            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 px-1 transition-colors">Konfirmasi Sandi Baru</label>
+            <input type="password" name="confirmPassword" required class="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all font-semibold text-slate-700 dark:text-slate-300" />
+          </div>
+          
+          <button type="submit" class="w-full bg-slate-900 dark:bg-primary-600 border-b-4 border-slate-950 dark:border-primary-700 hover:bg-primary-600 dark:hover:bg-primary-500 hover:border-primary-700 dark:hover:border-primary-600 text-white py-4 rounded-2x font-black text-sm uppercase tracking-widest transition-all active:scale-[0.98] active:border-b-0 rounded-2xl">
+            Simpan Perubahan
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Tambah User -->
+    <div class="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none transition-all flex flex-col h-full relative overflow-hidden">
+      <div class="absolute -right-10 -top-10 w-32 h-32 bg-accent rounded-full opacity-5 blur-2xl"></div>
+      
+      <div class="relative z-10 flex flex-col h-full">
+        <h2 class="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2 flex items-center gap-2 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-accent">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7.5v9m-4.5-4.5h9M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+          </svg>
+          Daftarkan User Baru
+        </h2>
+        <p class="text-slate-400 dark:text-slate-500 text-xs mb-8 transition-colors">User baru akan memiliki hak akses penuh sebagai Administrator.</p>
+        
+        <form action="/settings/user/add" method="POST" class="space-y-6 mt-auto">
+          <div class="space-y-1.5">
+            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 px-1 transition-colors">Username Baru</label>
+            <input type="text" name="newUsername" required class="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all font-semibold text-slate-700 dark:text-slate-300" placeholder="Contoh: admin_staf" />
+          </div>
+          <div class="space-y-1.5">
+            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 px-1 transition-colors">Sandi User Baru</label>
+            <input type="password" name="newUserPassword" required class="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all font-semibold text-slate-700 dark:text-slate-300" />
+          </div>
+          
+          <div class="flex-1"></div>
+          
+          <button type="submit" class="w-full bg-slate-900 dark:bg-slate-800 border-b-4 border-slate-950 dark:border-slate-950 hover:bg-slate-800 dark:hover:bg-slate-700 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all active:scale-[0.98] active:border-b-0 mt-8">
+            Daftarkan User
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Daftar Administrator (BAru) -->
+  <div class="mt-8">
+    <div class="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none transition-all relative overflow-hidden">
+      <div class="absolute -left-10 -bottom-10 w-32 h-32 bg-emerald-500 rounded-full opacity-5 blur-2xl"></div>
+      
+      <h2 class="text-xl font-bold text-slate-800 dark:text-slate-100 mb-6 flex items-center gap-2 transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-emerald-500">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-3.833-6.242 4.147 4.147 0 00-1.851.439A5.004 5.004 0 0113 12.75c-.852 0-1.63-.213-2.31-.588A5.995 5.995 0 007 12.58a5.996 5.996 0 00-2.31 4.57 4.125 4.125 0 003.833 6.242 9.337 9.337 0 004.121.952c.94 0 1.833-.14 2.625-.372" />
+        </svg>
+        Daftar Administrator Aktif
+      </h2>
+      
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-slate-50 dark:border-slate-800/50">
+              <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Username</th>
+              <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Role</th>
+              <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50 dark:divide-slate-800/50">
+            <% allUsers.forEach(u => { %>
+              <tr class="group hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all">
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 dark:text-slate-500 group-hover:bg-primary-500 group-hover:text-white transition-all shadow-sm font-bold text-xs">
+                      <%= u.username.charAt(0).toUpperCase() %>
+                    </div>
+                    <div>
+                        <div class="text-sm font-bold text-slate-700 dark:text-slate-200 transition-colors">
+                          <%= u.username %>
+                          <% if (u.username === user.username) { %>
+                             <span class="ml-2 px-2 py-0.5 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 text-[9px] font-black uppercase tracking-tight">Anda</span>
+                          <% } %>
+                        </div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest">Administrator</span>
+                </td>
+                <td class="px-6 py-4 text-right whitespace-nowrap">
+                  <% if (u.username !== user.username) { %>
+                    <form action="/settings/user/delete" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus user ini? Akun tidak dapat dipulihkan.')">
+                      <input type="hidden" name="usernameToDelete" value="<%= u.username %>">
+                      <button type="submit" class="p-2 text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 transition-colors" title="Hapus User">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                        </svg>
+                      </button>
+                    </form>
+                  <% } else { %>
+                    <span class="text-[10px] text-slate-300 dark:text-slate-600 font-bold uppercase tracking-tight italic">Sesi Aktif</span>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  
+  <div class="mt-12 text-center">
+    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 dark:text-slate-700 transition-colors">School Bell System • Security Module v1.1</p>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

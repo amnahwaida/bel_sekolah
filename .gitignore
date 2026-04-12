@@ -1,0 +1,8 @@
+node_modules/
+app/data/logs.json
+*.log
+.DS_Store
+.env
+music/*.mp3
+music/*.wav
+/app/data/import_*

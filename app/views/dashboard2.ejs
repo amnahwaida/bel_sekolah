@@ -1,0 +1,185 @@
+<%- include('layout') %>
+
+<% if (locals.rename === "success") { %>
+  <div class="bg-green-100 text-green-700 p-3 rounded mb-4"> ✅ Nama file berhasil diubah. </div>
+<% } else if (locals.rename === "error") { %>
+  <div class="bg-red-100 text-red-700 p-3 rounded mb-4"> ❌ Gagal mengganti nama. </div>
+<% } %>
+<% if (locals.stop === "success") { %>
+  <div class="bg-green-100 text-green-700 p-3 rounded mb-4"> ✅ Pemutaran dihentikan. </div>
+<% } %>
+<% if (locals.import === "success") { %>
+  <div class="bg-green-100 text-green-700 p-3 rounded mb-4"> ✅ Jadwal berhasil diimpor. </div>
+<% } else if (locals.import === "error") { %>
+  <div class="bg-red-100 text-red-700 p-3 rounded mb-4"> ❌ Gagal mengimpor jadwal. </div>
+<% } %>
+
+<!-- 🔴 Logout Button di Dashboard (pasti muncul) -->
+<div class="text-right mb-4">
+  <a href="/logout" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded flex items-center shadow">
+    <span>🚪</span>
+    <span class="ml-2 font-medium">Logout</span>
+  </a>
+</div>
+
+<div class="flex justify-between items-center mb-6">
+  <h1 class="text-2xl font-bold">📊 Dashboard Bel Sekolah</h1>
+  <div class="space-x-2">
+    <a href="/export/schedules.json" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm">📤 Export Jadwal</a>
+    <button onclick="document.getElementById('importForm').classList.toggle('hidden')" 
+      class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm">📥 Import Jadwal</button>
+  </div>
+</div>
+
+<!-- Toggle Jadwal Reguler -->
+<div class="bg-white p-4 rounded shadow mb-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h3 class="font-bold">🎛️ Pengaturan Jadwal Reguler</h3>
+      <p class="text-sm text-gray-600">Matikan seluruh jadwal reguler. Jadwal khusus tetap aktif.</p>
+    </div>
+    <form method="POST" action="/schedule/toggle">
+      <% if (locals.schedules && schedules.enabled) { %>
+        <button type="submit" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
+          ✅ AKTIF
+        </button>
+      <% } else { %>
+        <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">
+          ❌ NONAKTIF
+        </button>
+      <% } %>
+    </form>
+  </div>
+</div>
+
+<!-- Form Import -->
+<div id="importForm" class="bg-white p-4 rounded shadow mb-6 hidden">
+  <h3 class="font-bold mb-2">📤 Impor Jadwal</h3>
+  <form method="POST" action="/import" enctype="multipart/form-data" class="flex gap-2">
+    <input type="file" name="importfile" accept=".json" required class="flex-1" />
+    <button type="submit" class="bg-blue-600 text-white px-3 rounded">Impor</button>
+    <button type="button" onclick="document.getElementById('importForm').classList.add('hidden')"
+      class="bg-gray-500 text-white px-3 rounded">×</button>
+  </form>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <!-- Jadwal Reguler Per Hari -->
+  <div class="bg-white p-6 rounded shadow">
+    <h2 class="text-xl font-bold mb-4">⏰ Jadwal Reguler (Per Hari)</h2>
+    <% const days = [
+      { key: 'mon', name: 'Senin' },
+      { key: 'tue', name: 'Selasa' },
+      { key: 'wed', name: 'Rabu' },
+      { key: 'thu', name: 'Kamis' },
+      { key: 'fri', name: 'Jumat' },
+      { key: 'sat', name: 'Sabtu' },
+      { key: 'sun', name: 'Minggu' }
+    ]; %>
+    
+    <% days.forEach(day => { %>
+      <div class="mb-5">
+        <h3 class="font-semibold mb-2"><%= day.name %></h3>
+        <ul class="space-y-1 mt-2">
+          <% const list = schedules[day.key] || []; %>
+          <% list.forEach((s, i) => { %>
+            <li class="flex justify-between items-center bg-gray-50 p-2 rounded">
+              <span><%= s.time %> → <b><%= s.sound %></b></span>
+              <form method="POST" action="/schedule/remove" class="inline">
+                <input type="hidden" name="day" value="<%= day.key %>" />
+                <input type="hidden" name="index" value="<%= i %>" />
+                <button type="submit" class="text-red-500">×</button>
+              </form>
+            </li>
+          <% }) %>
+          <% if (list.length === 0) { %>
+            <li class="text-gray-400 italic">Tidak ada jadwal</li>
+          <% } %>
+        </ul>
+        <form method="POST" action="/schedule/add" class="mt-2 flex gap-2">
+          <input type="hidden" name="day" value="<%= day.key %>" />
+          <input type="time" name="time" class="px-2 py-1 border rounded" required />
+          <select name="sound" class="px-2 py-1 border rounded" required>
+            <% musicFiles.forEach(f => { %>
+              <option value="<%= f %>"><%= f %></option>
+            <% }) %>
+          </select>
+          <button type="submit" class="bg-green-500 text-white px-3 rounded text-sm">➕ Tambah</button>
+        </form>
+      </div>
+    <% }) %>
+  </div>
+
+  <!-- Jadwal Khusus + Musik -->
+  <div class="space-y-6">
+    <div class="bg-white p-6 rounded shadow">
+      <h2 class="text-xl font-bold mb-3">📅 Jadwal Khusus (Per Tanggal)</h2>
+      <ul class="space-y-2">
+        <% special.forEach((s, i) => { %>
+          <li class="flex justify-between bg-blue-50 p-2 rounded">
+            <div><b><%= s.date %></b> @ <%= s.time %> → <small><%= s.sound %></small></div>
+            <form method="POST" action="/special/remove" class="inline">
+              <input type="hidden" name="index" value="<%= i %>" />
+              <button class="text-red-600">×</button>
+            </form>
+          </li>
+        <% }) %>
+        <% if (special.length === 0) { %>
+          <li class="text-gray-400 italic">Belum ada jadwal khusus</li>
+        <% } %>
+      </ul>
+      <form method="POST" action="/special/add" class="mt-4 flex flex-wrap gap-2">
+        <input type="date" name="date" class="px-2 py-1 border rounded" required />
+        <input type="time" name="time" class="px-2 py-1 border rounded" required />
+        <select name="sound" class="px-2 py-1 border rounded" required>
+          <% musicFiles.forEach(f => { %>
+            <option value="<%= f %>"><%= f %></option>
+          <% }) %>
+        </select>
+        <button type="submit" class="bg-blue-500 text-white px-3 rounded text-sm">➕ Tambah</button>
+      </form>
+    </div>
+
+    <!-- Upload & STOP -->
+    <div class="bg-white p-6 rounded shadow">
+      <h2 class="text-xl font-bold mb-3">📤 Upload & Kontrol</h2>
+      <div class="mb-4">
+        <form method="POST" action="/stop" class="inline">
+          <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded">
+            🛑 Hentikan di STB
+          </button>
+        </form>
+      </div>
+      <form method="POST" action="/upload" enctype="multipart/form-data" class="mb-4">
+        <input type="file" name="audiofile" accept=".mp3,.wav" required />
+        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded mt-2">
+          📤 Upload MP3/WAV
+        </button>
+      </form>
+      <h3 class="font-semibold mb-2">🎵 File Musik (<%= musicFiles.length %>)</h3>
+      <div class="space-y-2 max-h-60 overflow-y-auto">
+        <% musicFiles.forEach(f => { %>
+          <div class="flex justify-between items-center border-b pb-1">
+            <span><%= f %></span>
+            <div>
+              <a href="/preview/<%= f %>" class="text-blue-600 mr-2">🔊 Web</a>
+              <form method="POST" action="/play" class="inline">
+                <input type="hidden" name="file" value="<%= f %>" />
+                <button type="submit" class="text-green-600">🎧 STB</button>
+              </form>
+              <form method="POST" action="/stop" class="inline ml-2">
+                <button type="submit" class="text-orange-500">🛑 Stop</button>
+              </form>
+              <form method="POST" action="/rename" class="inline ml-2">
+                <input type="hidden" name="oldname" value="<%= f %>" />
+                <input type="text" name="newname" value="<%= f %>" class="border text-xs w-32" maxlength="50"
+                  onfocus="this.select()" onchange="if(!this.value.endsWith('.mp3') && !this.value.endsWith('.wav')) this.value += '.mp3'" />
+                <button type="submit" class="text-blue-500">✏️</button>
+              </form>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  </div>
+</div>
