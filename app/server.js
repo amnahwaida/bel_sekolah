@@ -1,5 +1,6 @@
 const express = require('express');
 const session = require('express-session');
+const FileStore = require('session-file-store')(session);
 const path = require('path');
 const fs = require('fs').promises;
 const fsSync = require('fs');
@@ -61,10 +62,18 @@ const io = socketIo(server);
 const PORT = 3000;
 
 app.use(session({
+  store: new FileStore({
+    path: path.join('/app', 'data', 'sessions'),
+    ttl: 86400 * 7, // 7 hari
+    retries: 0
+  }),
   secret: process.env.SESSION_SECRET || 'rahasia_b3l_s3k0lah_final_fallback_dev_only',
   resave: false,
-  saveUninitialized: true,
-  cookie: { secure: false }
+  saveUninitialized: false, // Ubah ke false agar tidak buat file sesi kosong
+  cookie: { 
+    secure: false,
+    maxAge: 1000 * 60 * 60 * 24 * 7 // 7 hari
+  }
 }));
 
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -80,7 +89,7 @@ app.use((req, res, next) => {
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-const DATA_DIR = path.join(__dirname, 'data');
+const DATA_DIR = path.join('/app', 'data');
 const MUSIC_DIR = path.join('/app', 'music');
 
 [DATA_DIR, MUSIC_DIR].forEach(dir => {
@@ -558,19 +567,25 @@ app.post('/play', requireAuth, (req, res) => {
 
 app.post('/stop', requireAuth, (req, res) => {
   try {
-    if (activeAudioProcess) activeAudioProcess.kill();
-    if (activeFfmpegProcess) activeFfmpegProcess.kill();
-    if (liveMicProcess) liveMicProcess.kill();
-    if (liveMicFfmpeg) liveMicFfmpeg.kill();
+    // Step 1: Unpipe all streams first to prevent EPIPE crashes
+    if (activeFfmpegProcess && activeFfmpegProcess.stdout && activeAudioProcess && activeAudioProcess.stdin) {
+      try { activeFfmpegProcess.stdout.unpipe(activeAudioProcess.stdin); } catch (e) {}
+    }
+    if (liveMicFfmpeg && liveMicFfmpeg.stdout && liveMicProcess && liveMicProcess.stdin) {
+      try { liveMicFfmpeg.stdout.unpipe(liveMicProcess.stdin); } catch (e) {}
+    }
+
+    // Step 2: Force-kill all processes with SIGKILL (not SIGTERM)
+    if (activeAudioProcess) { try { activeAudioProcess.kill('SIGKILL'); } catch (e) {} }
+    if (activeFfmpegProcess) { try { activeFfmpegProcess.kill('SIGKILL'); } catch (e) {} }
+    if (liveMicProcess) { try { liveMicProcess.kill('SIGKILL'); } catch (e) {} }
+    if (liveMicFfmpeg) { try { liveMicFfmpeg.stdin.end(); } catch (e) {} try { liveMicFfmpeg.kill('SIGKILL'); } catch (e) {} }
     
-    // Sebagai perlindungan ganda (safeguard) jika proses menggantung
-    setTimeout(() => {
-      if (isAudioPlaying) {
-        spawn('pkill', ['-f', 'aplay']);
-        spawn('pkill', ['-f', 'ffmpeg']);
-      }
-    }, 1000);
+    // Step 3: Immediate pkill safeguard (don't wait)
+    spawn('pkill', ['-9', '-f', 'aplay']);
+    spawn('pkill', ['-9', '-f', 'ffmpeg']);
     
+    // Step 4: Reset ALL state
     isAudioPlaying = false;
     activeAudioName = null;
     activeAudioProcess = null;
@@ -580,11 +595,33 @@ app.post('/stop', requireAuth, (req, res) => {
     
     if (!manualOverride) relayOff();
 
+    // Step 5: Second safeguard after 2s in case processes took time to die
+    setTimeout(() => {
+      spawn('pkill', ['-9', '-f', 'aplay']);
+      spawn('pkill', ['-9', '-f', 'ffmpeg']);
+      // Force reset state again
+      isAudioPlaying = false;
+      activeAudioName = null;
+      activeAudioProcess = null;
+      activeFfmpegProcess = null;
+      liveMicProcess = null;
+      liveMicFfmpeg = null;
+    }, 2000);
+
     addLog('audio', `Semua audio dihentikan manual`, req.session.user.username);
 
     res.redirect('/dashboard?stop=success');
   } catch (err) {
     console.error('Stop error:', err);
+    // Even on error, force kill everything
+    spawn('pkill', ['-9', '-f', 'aplay']);
+    spawn('pkill', ['-9', '-f', 'ffmpeg']);
+    isAudioPlaying = false;
+    activeAudioName = null;
+    activeAudioProcess = null;
+    activeFfmpegProcess = null;
+    liveMicProcess = null;
+    liveMicFfmpeg = null;
     res.redirect('/dashboard?stop=error');
   }
 });
@@ -949,12 +986,16 @@ app.get('/', (req, res) => {
 // =======================
 
 io.on('connection', (socket) => {
+  // Track cleanup state per socket to prevent double-cleanup race conditions
+  let micCleanedUp = false;
+
   socket.on('start-mic', async () => {
     if (isAudioPlaying) {
       return socket.emit('mic-error', 'Sistem sedang sibuk');
     }
 
     console.log('🎙️ Memulai siaran langsung...');
+    micCleanedUp = false;
     isAudioPlaying = true;
     activeAudioName = "SIARAN LANGSUNG";
     addLog('audio', 'Memulai pengumuman langsung', 'Admin');
@@ -972,50 +1013,127 @@ io.on('connection', (socket) => {
     ]);
 
     liveMicProcess = spawn('aplay', ['-D', 'plughw:0,0', '-r', '44100', '-f', 'S16_LE', '-c', '1', '-q']);
-    
+
+    // Error handlers to prevent unhandled exceptions and reset state
+    liveMicFfmpeg.on('error', (err) => {
+      console.error('❌ Live mic ffmpeg error:', err.message);
+      cleanupMic('ffmpeg error');
+    });
+
+    liveMicProcess.on('error', (err) => {
+      console.error('❌ Live mic aplay error:', err.message);
+      cleanupMic('aplay error');
+    });
+
+    // If aplay exits unexpectedly (e.g. device busy), trigger full cleanup
+    liveMicProcess.on('close', (code) => {
+      console.log(`ℹ️ Live mic aplay closed (exit code: ${code})`);
+      cleanupMic('aplay closed');
+    });
+
+    // If ffmpeg exits unexpectedly, trigger full cleanup
+    liveMicFfmpeg.on('close', (code) => {
+      console.log(`ℹ️ Live mic ffmpeg closed (exit code: ${code})`);
+      // Only cleanup if aplay hasn't already triggered it
+      if (!micCleanedUp) {
+        cleanupMic('ffmpeg closed');
+      }
+    });
+
+    // Pipe ffmpeg decoded output to aplay
     liveMicFfmpeg.stdout.pipe(liveMicProcess.stdin);
+
+    // Suppress ffmpeg stderr
+    if (liveMicFfmpeg.stderr) liveMicFfmpeg.stderr.resume();
 
     socket.emit('mic-ready');
   });
 
   socket.on('audio-data', (data) => {
-    if (liveMicFfmpeg && liveMicFfmpeg.stdin.writable) {
-      liveMicFfmpeg.stdin.write(data);
+    if (liveMicFfmpeg && liveMicFfmpeg.stdin && liveMicFfmpeg.stdin.writable) {
+      try {
+        liveMicFfmpeg.stdin.write(data);
+      } catch (e) {
+        // stdin might be destroyed between writable check and write
+        console.error('❌ Error writing audio data:', e.message);
+      }
     }
   });
 
-  const cleanupMic = () => {
+  const cleanupMic = (reason = 'manual') => {
+    // Prevent double cleanup (both ffmpeg close + aplay close can fire)
+    if (micCleanedUp) return;
+    micCleanedUp = true;
+
+    console.log(`🧹 Membersihkan mic (alasan: ${reason})`);
+
+    // Step 1: Unpipe to prevent EPIPE crashes
+    if (liveMicFfmpeg && liveMicFfmpeg.stdout && liveMicProcess && liveMicProcess.stdin) {
+      try { liveMicFfmpeg.stdout.unpipe(liveMicProcess.stdin); } catch (e) {}
+    }
+
+    // Step 2: Close ffmpeg stdin gracefully, then force kill
     if (liveMicFfmpeg) {
       try { liveMicFfmpeg.stdin.end(); } catch (e) {}
-      liveMicFfmpeg.kill();
+      try { liveMicFfmpeg.kill('SIGKILL'); } catch (e) {}
       liveMicFfmpeg = null;
     }
+
+    // Step 3: Kill aplay
     if (liveMicProcess) {
-      liveMicProcess.kill();
+      try { liveMicProcess.kill('SIGKILL'); } catch (e) {}
       liveMicProcess = null;
     }
-    
+
+    // Step 4: Safeguard — kill any lingering aplay/ffmpeg child processes
+    // This is critical to free the audio device /dev/snd/*
+    try {
+      spawn('pkill', ['-f', 'aplay.*plughw']);
+    } catch (e) {}
+    try {
+      spawn('pkill', ['-f', 'ffmpeg.*pipe']);
+    } catch (e) {}
+
+    // Step 5: Reset global audio state
     if (isAudioPlaying && activeAudioName === "SIARAN LANGSUNG") {
       isAudioPlaying = false;
       activeAudioName = null;
+      activeAudioProcess = null;
+      activeFfmpegProcess = null;
       if (!manualOverride) relayOff();
     }
+
+    // Step 6: Final safety net — if state somehow stuck after 3 seconds, force reset
+    setTimeout(() => {
+      if (isAudioPlaying && activeAudioName === "SIARAN LANGSUNG") {
+        console.warn('⚠️ Force-resetting stuck audio state after mic cleanup');
+        isAudioPlaying = false;
+        activeAudioName = null;
+        activeAudioProcess = null;
+        activeFfmpegProcess = null;
+        liveMicProcess = null;
+        liveMicFfmpeg = null;
+        // Do one more pkill to be absolutely sure
+        spawn('pkill', ['-9', '-f', 'aplay']);
+        if (!manualOverride) relayOff();
+      }
+    }, 3000);
   };
 
   socket.on('stop-mic', () => {
     console.log('🛑 Menghentikan siaran langsung');
-    cleanupMic();
+    cleanupMic('stop-mic');
     addLog('audio', 'Pengumuman langsung selesai', 'Admin');
   });
 
   socket.on('error', (err) => {
     console.error('Socket error:', err);
-    cleanupMic();
+    cleanupMic('socket error');
   });
 
   socket.on('disconnect', () => {
     console.log('⚠️ Socket disconnected, membersihkan mic...');
-    cleanupMic();
+    cleanupMic('socket disconnect');
   });
 });
 

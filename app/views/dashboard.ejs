@@ -254,9 +254,9 @@
               <% const list = schedules[day.key] || []; %>
               <% list.forEach((s, i) => { %>
                 <li class="group flex justify-between items-center bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700 hover:border-<%= day.color %>-200 dark:hover:border-<%= day.color %>-500/30 hover:shadow-sm transition-all">
-                  <div class="flex flex-col">
+                  <div class="flex flex-col min-w-0 flex-1">
                     <span class="text-sm font-bold text-slate-700 dark:text-slate-200 leading-tight transition-colors"><%= s.time %></span>
-                    <span class="text-[10px] text-slate-400 dark:text-slate-500 truncate w-24 sm:w-32 transition-colors" title="<%= s.sound %>"><%= s.sound %></span>
+                    <span class="text-[10px] text-slate-400 dark:text-slate-500 truncate max-w-full transition-colors" title="<%= s.sound %>"><%= s.sound %></span>
                   </div>
                   <form method="POST" action="/schedule/remove" class="inline opacity-0 group-hover:opacity-100 transition-opacity" onsubmit="return confirmDelete()">
                     <input type="hidden" name="day" value="<%= day.key %>" />
@@ -278,7 +278,7 @@
               <input type="hidden" name="day" value="<%= day.key %>" />
               <div class="flex gap-2">
                 <input type="time" name="time" class="px-2 py-1 text-xs border border-slate-200 dark:border-slate-700 rounded-lg flex-1 outline-none focus:border-<%= day.color %>-300 dark:focus:border-<%= day.color %>-500 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 transition-all" required />
-                <select name="sound" class="px-2 py-1 text-xs border border-slate-200 dark:border-slate-700 rounded-lg flex-1 outline-none focus:border-<%= day.color %>-300 dark:focus:border-<%= day.color %>-500 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 transition-all" required>
+                <select name="sound" class="px-2 py-1 text-xs border border-slate-200 dark:border-slate-700 rounded-lg flex-1 min-w-0 outline-none focus:border-<%= day.color %>-300 dark:focus:border-<%= day.color %>-500 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 transition-all truncate" required>
                   <% musicFiles.forEach(f => { %>
                     <option value="<%= f %>"><%= f %></option>
                   <% }) %>
@@ -314,9 +314,9 @@
                 <div class="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold tracking-tighter transition-colors"><%= s.date.split('-')[0] %></div>
                 <div class="text-sm font-bold text-indigo-600 dark:text-indigo-400 transition-colors"><%= s.date.split('-')[1] %>-<%= s.date.split('-')[2] %></div>
               </div>
-              <div>
-                <div class="text-sm font-bold text-slate-700 dark:text-slate-200 transition-colors text-slate-700 dark:text-slate-200"><%= s.time %></div>
-                <div class="text-[10px] text-slate-400 dark:text-slate-500 truncate w-32 transition-colors text-slate-400"><%= s.sound %></div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-bold text-slate-700 dark:text-slate-200 transition-colors"><%= s.time %></div>
+                <div class="text-[10px] text-slate-400 dark:text-slate-500 truncate max-w-full transition-colors"><%= s.sound %></div>
               </div>
             </div>
             <form method="POST" action="/special/remove" class="inline opacity-0 group-hover:opacity-100 transition-opacity" onsubmit="return confirmDelete()">
@@ -351,7 +351,7 @@
           </div>
           <div class="flex flex-col gap-1">
             <label class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase px-1 transition-colors">Pilih Suara</label>
-            <select name="sound" class="px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-xl w-full outline-none focus:border-indigo-400 dark:focus:border-indigo-500 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 transition-all" required>
+            <select name="sound" class="px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-xl w-full outline-none focus:border-indigo-400 dark:focus:border-indigo-500 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 transition-all truncate" required>
               <% musicFiles.forEach(f => { %>
                 <option value="<%= f %>"><%= f %></option>
               <% }) %>

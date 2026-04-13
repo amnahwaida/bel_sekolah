@@ -8,6 +8,7 @@ services:
       - "3000:3000"
     volumes:
       - ./app:/app/app
+      - ./data:/app/data
       - ./music:/app/music
     environment:
       - TZ=Asia/Jakarta
