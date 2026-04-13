@@ -78,11 +78,17 @@ app.use(session({
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Middleware untuk menyuplai data user ke semua view
-app.use((req, res, next) => {
+// Middleware untuk menyuplai data user dan branding ke semua view
+app.use(async (req, res, next) => {
   res.locals.user = req.session.user || null;
+  try {
+    const data = await fs.readFile(BRANDING_FILE, 'utf8');
+    res.locals.branding = JSON.parse(data);
+  } catch (e) {
+    res.locals.branding = {}; // Fallback
+  }
   next();
 });
 
@@ -100,14 +106,28 @@ const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const SCHEDULES_FILE = path.join(DATA_DIR, 'schedules.json');
 const SPECIAL_SCHEDULES_FILE = path.join(DATA_DIR, 'special_schedules.json');
 const LOGS_FILE = path.join(DATA_DIR, 'logs.json');
+const BRANDING_FILE = path.join(DATA_DIR, 'branding.json');
 
-if (!fsSync.existsSync(USERS_FILE)) fsSync.writeFileSync(USERS_FILE, JSON.stringify([{ username: 'smamsa', password: 'smamsa12' }]));
+if (!fsSync.existsSync(USERS_FILE)) fsSync.writeFileSync(USERS_FILE, JSON.stringify([{ username: 'smamsa', password: 'smamsa12', role: 'root' }]));
 if (!fsSync.existsSync(SCHEDULES_FILE)) fsSync.writeFileSync(SCHEDULES_FILE, JSON.stringify({
   enabled: true,
   mon: [], tue: [], wed: [], thu: [], fri: [], sat: [], sun: []
 }));
 if (!fsSync.existsSync(SPECIAL_SCHEDULES_FILE)) fsSync.writeFileSync(SPECIAL_SCHEDULES_FILE, JSON.stringify([]));
 if (!fsSync.existsSync(LOGS_FILE)) fsSync.writeFileSync(LOGS_FILE, JSON.stringify([]));
+if (!fsSync.existsSync(BRANDING_FILE)) {
+  fsSync.writeFileSync(BRANDING_FILE, JSON.stringify({
+    loginWelcome: "Selamat Datang",
+    loginSubtitle: "Masuk ke Sistem Bel Sekolah",
+    appName: "SMAMUHI",
+    appSub: "Advanced Bell",
+    footerCredit: 'Crafted with ❤️ by <a href="mailto:vannyezhaa@gmail.com" class="text-primary-400 hover:text-primary-300 transition-colors">vannyezha</a> </br> Business & Collaboration: +6285159982101',
+    pageTitle: "BELL-SMAMUHI",
+    theme: "crimson",
+    logoUrl: null,
+    faviconUrl: null
+  }, null, 2));
+}
 
 // HELPER: Audit Logs
 const addLog = async (type, message, user = 'System') => {
@@ -128,35 +148,70 @@ const addLog = async (type, message, user = 'System') => {
   }
 };
 
-// HELPER: Password Migration (Plain to Hash)
-const migratePasswords = async () => {
+// HELPER: Delete Asset File Safely (Storage Optimization for STB)
+const deleteFileSafely = async (fileUrl) => {
+  if (!fileUrl || !fileUrl.startsWith('/branding/')) return;
+  try {
+    const fileName = fileUrl.replace('/branding/', '');
+    const fullPath = path.join(__dirname, 'public', 'branding', fileName);
+    if (fsSync.existsSync(fullPath)) {
+      await fs.unlink(fullPath);
+      console.log(`[Storage Cleanup] Deleted redundant asset: ${fileName}`);
+    }
+  } catch (err) {
+    console.error(`[Storage Cleanup Error] Failed to delete ${fileUrl}:`, err);
+  }
+};
+
+// HELPER: Migration (Plain to Hash & Roles)
+const migrateUsers = async () => {
   try {
     const data = await fs.readFile(USERS_FILE, 'utf8');
     const users = JSON.parse(data);
     let changed = false;
 
     for (let user of users) {
-      // Jika password belum di-hash (bcrypt hash biasanya mulai dengan $2a$ atau $2b$)
+      // 1. Password Migration
       if (!user.password.startsWith('$2a$') && !user.password.startsWith('$2b$')) {
         console.log(`🔐 Migrating password for user: ${user.username}`);
         user.password = await bcrypt.hash(user.password, 10);
+        changed = true;
+      }
+      // 2. Role Migration (Default to root if missing)
+      if (!user.role) {
+        console.log(`🛡️ Assigning default role (root) to user: ${user.username}`);
+        user.role = 'root';
         changed = true;
       }
     }
 
     if (changed) {
       await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2));
-      console.log('✅ All passwords migrated to secure hash format.');
-      addLog('system', 'Sistem berhasil melakukan migrasi password ke format terenkripsi');
+      console.log('✅ User data migration complete.');
+      addLog('system', 'Migrasi data pengguna (enkripsi & level akses) berhasil dilakukan');
     }
   } catch (err) {
     console.error('Migration error:', err);
   }
 };
 
-migratePasswords();
+migrateUsers();
 
 // === Upload Audio (.mp3/.wav) ===
+const BRANDING_UPLOAD_DIR = path.join(__dirname, 'public', 'branding');
+if (!fsSync.existsSync(BRANDING_UPLOAD_DIR)) fsSync.mkdirSync(BRANDING_UPLOAD_DIR, { recursive: true });
+
+const uploadBranding = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, BRANDING_UPLOAD_DIR),
+    filename: (req, file, cb) => {
+      const ext = path.extname(file.originalname);
+      const field = file.fieldname;
+      cb(null, `${field}-${Date.now()}${ext}`);
+    }
+  })
+});
+
 const uploadAudio = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => cb(null, MUSIC_DIR),
@@ -200,6 +255,11 @@ const requireAuth = (req, res, next) => {
   next();
 };
 
+const requireRoot = (req, res, next) => {
+  if (req.session.user && req.session.user.role === 'root') return next();
+  res.redirect('/settings?msg=Akses ditolak: Hanya Root yang dapat mengelola pengguna&type=error');
+};
+
 const ensureSchedules = (schedules) => {
   const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
   days.forEach(d => { if (!Array.isArray(schedules[d])) schedules[d] = []; });
@@ -225,9 +285,18 @@ const ensureSchedules = (schedules) => {
 
 const relayOn = () => {
   return new Promise((resolve) => {
-    exec(RELAY_ON, () => {
-      relayStatus = true;
-      console.log("🔌 Amplifier ON");
+    if (!checkRelayDevice()) {
+      console.warn("⚠️ Relay device tidak tersedia, skip relayOn");
+      resolve();
+      return;
+    }
+    exec(RELAY_ON, (error) => {
+      if (error) {
+        console.error("⚠️ Gagal menyalakan relay (device mungkin tercabut):", error.message);
+      } else {
+        relayStatus = true;
+        console.log("🔌 Amplifier ON");
+      }
       setTimeout(resolve, AMP_WARMUP);
     });
   });
@@ -246,9 +315,16 @@ const relayOff = () => {
     return;
   }
 
+  if (!checkRelayDevice()) {
+    console.warn("⚠️ Relay device tidak tersedia, reset status ke OFF");
+    relayStatus = false;
+    return;
+  }
+
   exec(RELAY_OFF, (error) => {
     if (error) {
-      console.error('❌ Error mematikan relay:', error);
+      console.error('⚠️ Gagal mematikan relay (device mungkin tercabut):', error.message);
+      relayStatus = false; // Reset status anyway
       return;
     }
     relayStatus = false;
@@ -265,8 +341,11 @@ app.post('/login', async (req, res) => {
     const user = users.find(u => u.username === username);
     
     if (user && await bcrypt.compare(password, user.password)) {
-      req.session.user = { username: user.username }; // Jangan simpan hash di session
-      addLog('auth', `User ${username} berhasil login`, username);
+      req.session.user = { 
+        username: user.username,
+        role: user.role || 'admin'
+      };
+      addLog('auth', `User ${username} berhasil login (${req.session.user.role})`, username);
       return res.redirect('/dashboard');
     }
     addLog('auth', `Gagal login: Username ${username} tidak ditemukan atau sandi salah`, username);
@@ -287,20 +366,50 @@ app.get('/dashboard', requireAuth, async (req, res) => {
   try {
     let schedules = JSON.parse(await fs.readFile(SCHEDULES_FILE, 'utf8'));
     schedules = ensureSchedules(schedules);
-    const special = JSON.parse(await fs.readFile(SPECIAL_SCHEDULES_FILE, 'utf8'));
-    const files = await fs.readdir(MUSIC_DIR);
-    const musicFiles = files.filter(f => /\.(mp3|wav)$/i.test(f));
     res.render('dashboard', { 
-      schedules, special, musicFiles, 
-      rename: req.query.rename, 
-      stop: req.query.stop, 
-      import: req.query.import,
-      play: req.query.play,
+      schedules,
+      relayStatus,
+      manualOverride,
+      activePage: 'dashboard',
       quickCallFile: schedules.quickCallFile || null
     });
   } catch (err) {
     console.error('Render error:', err);
     res.status(500).send('<h2>❌ Error Dashboard</h2><pre>' + (err.message || err) + '</pre>');
+  }
+});
+
+app.get('/schedules', requireAuth, async (req, res) => {
+  try {
+    let schedules = JSON.parse(await fs.readFile(SCHEDULES_FILE, 'utf8'));
+    schedules = ensureSchedules(schedules);
+    const special = JSON.parse(await fs.readFile(SPECIAL_SCHEDULES_FILE, 'utf8'));
+    const files = await fs.readdir(MUSIC_DIR);
+    const musicFiles = files.filter(f => /\.(mp3|wav)$/i.test(f));
+    res.render('schedules', { 
+      schedules, special, musicFiles,
+      activePage: 'schedules',
+      import: req.query.import
+    });
+  } catch (err) {
+    res.status(500).send('Error loading schedules');
+  }
+});
+
+app.get('/audio', requireAuth, async (req, res) => {
+  try {
+    const files = await fs.readdir(MUSIC_DIR);
+    const musicFiles = files.filter(f => /\.(mp3|wav)$/i.test(f));
+    let schedules = JSON.parse(await fs.readFile(SCHEDULES_FILE, 'utf8'));
+    schedules = ensureSchedules(schedules);
+    res.render('audio', { 
+      musicFiles,
+      activePage: 'audio',
+      quickCallFile: schedules.quickCallFile || null,
+      rename: req.query.rename
+    });
+  } catch (err) {
+    res.status(500).send('Error loading audio library');
   }
 });
 
@@ -311,7 +420,8 @@ app.get('/settings', requireAuth, async (req, res) => {
     res.render('settings', { 
       msg: req.query.msg || null, 
       type: req.query.type || 'info',
-      allUsers: users.map(u => ({ username: u.username })) // Jangan kirim password ke view
+      activePage: 'settings',
+      allUsers: users.map(u => ({ username: u.username, role: u.role || 'admin' })) // Sertakan role untuk view
     });
   } catch (err) {
     res.status(500).send('Error loading settings');
@@ -319,7 +429,7 @@ app.get('/settings', requireAuth, async (req, res) => {
 });
 
 // API: Hapus User
-app.post('/settings/user/delete', requireAuth, async (req, res) => {
+app.post('/settings/user/delete', requireAuth, requireRoot, async (req, res) => {
   const { usernameToDelete } = req.body;
   if (usernameToDelete === req.session.user.username) {
     return res.redirect('/settings?msg=Anda tidak dapat menghapus diri sendiri!&type=error');
@@ -363,6 +473,7 @@ app.get('/logs', requireAuth, async (req, res) => {
       logs: results,
       currentPage: page,
       totalPages: totalPages,
+      activePage: 'logs',
       totalEntries: logs.length
     });
   } catch (err) {
@@ -399,8 +510,8 @@ app.post('/settings/password', requireAuth, async (req, res) => {
 });
 
 // API: Tambah User Baru
-app.post('/settings/user/add', requireAuth, async (req, res) => {
-  const { newUsername, newUserPassword } = req.body;
+app.post('/settings/user/add', requireAuth, requireRoot, async (req, res) => {
+  const { newUsername, newUserPassword, newRole } = req.body;
   
   if (!newUsername || !newUserPassword) {
     return res.redirect('/settings?msg=Username and Password required&type=error');
@@ -414,14 +525,99 @@ app.post('/settings/user/add', requireAuth, async (req, res) => {
     }
 
     const hashedPass = await bcrypt.hash(newUserPassword, 10);
-    users.push({ username: newUsername, password: hashedPass });
+    users.push({ 
+      username: newUsername, 
+      password: hashedPass,
+      role: newRole || 'admin'
+    });
     await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2));
-    addLog('system', `User baru didaftarkan: ${newUsername}`, req.session.user.username);
+    addLog('system', `User baru didaftarkan: ${newUsername} (${newRole || 'admin'})`, req.session.user.username);
     
     res.redirect('/settings?msg=User baru berhasil didaftarkan&type=success');
   } catch (err) {
     console.error('Add user error:', err);
     res.redirect('/settings?msg=Terjadi kesalahan sistem&type=error');
+  }
+});
+
+// API: Update Branding Text
+app.post('/settings/branding/update', requireAuth, requireRoot, async (req, res) => {
+  try {
+    const updates = req.body;
+    const current = JSON.parse(await fs.readFile(BRANDING_FILE, 'utf8'));
+    const updated = { ...current, ...updates };
+    await fs.writeFile(BRANDING_FILE, JSON.stringify(updated, null, 2));
+    addLog('system', 'Personalisasi branding diperbarui', req.session.user.username);
+    res.redirect('/settings?msg=Branding berhasil diperbarui&type=success');
+  } catch (err) {
+    console.error('Branding update error:', err);
+    res.redirect('/settings?msg=Gagal memperbarui branding&type=error');
+  }
+});
+
+// API: Upload Branding Assets
+app.post('/settings/branding/upload', requireAuth, requireRoot, uploadBranding.fields([
+  { name: 'logo', maxCount: 1 },
+  { name: 'favicon', maxCount: 1 }
+]), async (req, res) => {
+  try {
+    const current = JSON.parse(await fs.readFile(BRANDING_FILE, 'utf8'));
+    let changed = false;
+    
+    // Capture old URLs for cleanup
+    const oldLogo = current.logoUrl;
+    const oldFavicon = current.faviconUrl;
+    
+    if (req.files['logo'] && req.files['logo'][0]) {
+      current.logoUrl = `/branding/${req.files['logo'][0].filename}`;
+      changed = true;
+      if (oldLogo) await deleteFileSafely(oldLogo);
+    }
+    if (req.files['favicon'] && req.files['favicon'][0]) {
+      current.faviconUrl = `/branding/${req.files['favicon'][0].filename}`;
+      changed = true;
+      if (oldFavicon) await deleteFileSafely(oldFavicon);
+    }
+    
+    if (changed) {
+      await fs.writeFile(BRANDING_FILE, JSON.stringify(current, null, 2));
+      addLog('system', 'Aset branding (logo/favicon) diperbarui', req.session.user.username);
+      res.redirect('/settings?msg=Aset branding berhasil diunggah&type=success');
+    } else {
+      res.redirect('/settings?msg=Tidak ada file yang dipilih untuk diunggah&type=error');
+    }
+  } catch (err) {
+    console.error('Branding upload error:', err);
+    res.redirect('/settings?msg=Gagal mengunggah aset branding: ' + err.message + '&type=error');
+  }
+});
+
+// API: Reset Branding to Default
+app.post('/settings/branding/reset', requireAuth, requireRoot, async (req, res) => {
+  try {
+    const current = JSON.parse(await fs.readFile(BRANDING_FILE, 'utf8'));
+    
+    // Cleanup custom assets before reset
+    if (current.logoUrl) await deleteFileSafely(current.logoUrl);
+    if (current.faviconUrl) await deleteFileSafely(current.faviconUrl);
+
+    const defaults = {
+      loginWelcome: "Selamat Datang",
+      loginSubtitle: "Masuk ke Sistem Bel Sekolah",
+      appName: "SMAMUHI",
+      appSub: "Advanced Bell",
+      footerCredit: 'Crafted with ❤️ by <a href="mailto:vannyezhaa@gmail.com" class="text-primary-400 hover:text-primary-300 transition-colors">vannyezha</a> </br> Business & Collaboration: +6285159982101',
+      pageTitle: "BELL-SMAMUHI",
+      theme: "crimson",
+      logoUrl: null,
+      faviconUrl: null
+    };
+    await fs.writeFile(BRANDING_FILE, JSON.stringify(defaults, null, 2));
+    addLog('system', 'Branding dikembalikan ke pengaturan awal', req.session.user.username);
+    res.redirect('/settings?msg=Branding dikembalikan ke default&type=success');
+  } catch (err) {
+    console.error('Branding reset error:', err);
+    res.redirect('/settings?msg=Gagal mereset branding&type=error');
   }
 });
 
@@ -436,7 +632,7 @@ app.post('/schedule/add', requireAuth, async (req, res) => {
     schedules[day].push({ time, sound });
     schedules[day].sort((a, b) => a.time.localeCompare(b.time));
     await fs.writeFile(SCHEDULES_FILE, JSON.stringify(schedules, null, 2));
-    res.redirect('/dashboard');
+    res.redirect('/schedules');
   } catch (err) {
     console.error('Add schedule error:', err);
     res.status(500).send('Gagal tambah jadwal');
@@ -452,7 +648,7 @@ app.post('/schedule/remove', requireAuth, async (req, res) => {
     schedules = ensureSchedules(schedules);
     schedules[day].splice(parseInt(index), 1);
     await fs.writeFile(SCHEDULES_FILE, JSON.stringify(schedules, null, 2));
-    res.redirect('/dashboard');
+    res.redirect('/schedules');
   } catch (err) {
     console.error('Remove schedule error:', err);
     res.status(500).send('Gagal hapus jadwal');
@@ -478,7 +674,7 @@ app.post('/special/add', requireAuth, async (req, res) => {
     const special = JSON.parse(await fs.readFile(SPECIAL_SCHEDULES_FILE, 'utf8'));
     special.push({ date, time, sound });
     await fs.writeFile(SPECIAL_SCHEDULES_FILE, JSON.stringify(special, null, 2));
-    res.redirect('/dashboard');
+    res.redirect('/schedules');
   } catch (err) {
     console.error('Add special error:', err);
     res.status(500).send('Gagal tambah jadwal khusus');
@@ -491,7 +687,7 @@ app.post('/special/remove', requireAuth, async (req, res) => {
     const special = JSON.parse(await fs.readFile(SPECIAL_SCHEDULES_FILE, 'utf8'));
     special.splice(parseInt(index), 1);
     await fs.writeFile(SPECIAL_SCHEDULES_FILE, JSON.stringify(special, null, 2));
-    res.redirect('/dashboard');
+    res.redirect('/schedules');
   } catch (err) {
     console.error('Remove special error:', err);
     res.status(500).send('Gagal hapus jadwal khusus');
@@ -513,7 +709,7 @@ app.post('/schedule/edit', requireAuth, async (req, res) => {
     schedules[day].sort((a, b) => a.time.localeCompare(b.time));
     await fs.writeFile(SCHEDULES_FILE, JSON.stringify(schedules, null, 2));
     addLog('config', `Jadwal ${day} #${idx} diubah: ${time} → ${sound}`, req.session.user.username);
-    res.redirect('/dashboard');
+    res.redirect('/schedules');
   } catch (err) {
     console.error('Edit schedule error:', err);
     res.status(500).send('Gagal edit jadwal');
@@ -531,7 +727,7 @@ app.post('/special/edit', requireAuth, async (req, res) => {
     special[idx] = { date, time, sound };
     await fs.writeFile(SPECIAL_SCHEDULES_FILE, JSON.stringify(special, null, 2));
     addLog('config', `Jadwal khusus #${idx} diubah: ${date} ${time} → ${sound}`, req.session.user.username);
-    res.redirect('/dashboard');
+    res.redirect('/schedules');
   } catch (err) {
     console.error('Edit special error:', err);
     res.status(500).send('Gagal edit jadwal khusus');
@@ -540,7 +736,7 @@ app.post('/special/edit', requireAuth, async (req, res) => {
 
 // 🔊 Upload musik — pakai uploadAudio
 app.post('/upload', requireAuth, uploadAudio.single('audiofile'), (req, res) => {
-  res.redirect('/dashboard');
+  res.redirect('/audio');
 });
 
 // API: Set Quick Call File
@@ -552,7 +748,7 @@ app.post('/config/quick-call', requireAuth, async (req, res) => {
     schedules.quickCallFile = filename;
     await fs.writeFile(SCHEDULES_FILE, JSON.stringify(schedules, null, 2));
     addLog('system', `Pintasan Panggilan Ketua Kelas diatur ke: ${filename}`, req.session.user.username);
-    res.redirect('/dashboard');
+    res.redirect('/audio');
   } catch (err) {
     console.error('Config error:', err);
     res.status(500).send('Gagal mengatur pintasan');
@@ -565,7 +761,7 @@ app.post('/music/delete', requireAuth, async (req, res) => {
   if (!file) return res.redirect('/dashboard');
   try {
     await fs.unlink(path.join(MUSIC_DIR, file));
-    res.redirect('/dashboard');
+    res.redirect('/audio');
   } catch (e) {
     console.error('Delete error:', e);
     res.redirect('/dashboard');
@@ -580,7 +776,7 @@ app.post('/rename', requireAuth, async (req, res) => {
   if (newname === oldname) return res.redirect('/dashboard');
   try {
     await fs.rename(path.join(MUSIC_DIR, oldname), path.join(MUSIC_DIR, newname));
-    res.redirect('/dashboard?rename=success');
+    res.redirect('/audio?rename=success');
   } catch (err) {
     console.error('Rename error:', err);
     res.redirect('/dashboard?rename=error');

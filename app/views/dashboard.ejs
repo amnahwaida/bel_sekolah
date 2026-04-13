@@ -1,902 +1,281 @@
 <script src="/socket.io/socket.io.js"></script>
 
-<%- include('partials/header') %>
+<%- include('partials/header', { activePage: 'dashboard' }) %>
 
-<div id="flash-messages">
-  <% if (locals.rename === "success") { %>
-    <div class="bg-green-50 border border-green-200 text-green-700 p-4 rounded-2xl mb-6 shadow-sm flex items-center gap-3 animate-fade-in">
-      <span class="bg-green-500 text-white p-1 rounded-full text-xs">✓</span> Nama file berhasil diubah.
-    </div>
-  <% } else if (locals.rename === "error") { %>
-    <div class="bg-red-50 border border-red-200 text-red-700 p-4 rounded-2xl mb-6 shadow-sm flex items-center gap-3 animate-fade-in">
-      <span class="bg-red-500 text-white p-1 rounded-full text-xs">✕</span> Gagal mengganti nama.
-    </div>
-  <% } %>
-  <% if (locals.stop === "success") { %>
-    <div class="bg-blue-50 border border-blue-200 text-blue-700 p-4 rounded-2xl mb-6 shadow-sm flex items-center gap-3 animate-fade-in">
-      <span class="bg-blue-500 text-white p-1 rounded-full text-xs">i</span> Pemutaran dihentikan.
-    </div>
-  <% } %>
-  <% if (locals.import === "success") { %>
-    <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 p-4 rounded-2xl mb-6 shadow-sm flex items-center gap-3 animate-fade-in">
-      <span class="bg-emerald-500 text-white p-1 rounded-full text-xs">✓</span> Jadwal berhasil diimpor.
-    </div>
-  <% } else if (locals.import === "error") { %>
-    <div class="bg-red-50 border border-red-200 text-red-700 p-4 rounded-2xl mb-6 shadow-sm flex items-center gap-3 animate-fade-in">
-      <span class="bg-red-500 text-white p-1 rounded-full text-xs">✕</span> Gagal mengimpor jadwal.
-    </div>
-  <% } %>
-</div>
-
-<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6">
-  <div>
-    <h1 class="text-3xl font-bold text-slate-800 dark:text-slate-100 transition-colors flex items-center gap-3">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 text-primary-600">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-      </svg>
-      Dashboard Kontrol
-    </h1>
-    <p class="text-slate-500 dark:text-slate-400 mt-1 ml-11">Kelola jadwal dan bel sekolah dengan mudah.</p>
-  </div>
-  <div class="flex flex-wrap gap-3">
-    <a href="/export/schedules.json" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 text-slate-600 dark:text-slate-400 px-5 py-2.5 rounded-xl font-semibold transition-all shadow-sm flex items-center group">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2 group-hover:scale-110 transition-transform">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-      </svg>
-      <span>Export</span>
-    </a>
-    <button onclick="toggleImportForm()"
-      class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 text-slate-600 dark:text-slate-400 px-5 py-2.5 rounded-xl font-semibold transition-all shadow-sm flex items-center group">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2 group-hover:scale-110 transition-transform">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-      </svg>
-      <span>Import</span>
-    </button>
-  </div>
-</div>
-
-<!-- 🔌 Kontrol Manual Amplifier -->
-<div class="bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-900 dark:to-black p-8 rounded-3xl shadow-xl shadow-slate-200 dark:shadow-none mb-8 border border-slate-700 relative overflow-hidden transition-all">
-  <div class="absolute -right-12 -top-12 w-48 h-48 bg-primary-600 rounded-full opacity-10 blur-3xl"></div>
-  <div class="absolute -left-12 -bottom-12 w-48 h-48 bg-accent rounded-full opacity-10 blur-3xl"></div>
+<div class="max-w-[1400px] mx-auto pb-12">
   
-  <div class="flex flex-col lg:flex-row items-center justify-between gap-8 relative z-10">
-    <div class="text-center lg:text-left">
-      <h3 class="text-white text-2xl font-bold mb-2 flex items-center justify-center lg:justify-start gap-3">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-7 h-7 text-primary-400">
-          <path fill-rule="evenodd" d="M14.615 1.595a.75.75 0 01.359.852L12.982 9.75h7.268a.75.75 0 01.548 1.262l-10.5 11.25a.75.75 0 01-1.272-.71l1.992-7.302H3.75a.75.75 0 01-.548-1.262l10.5-11.25a.75.75 0 01.913-.143z" clip-rule="evenodd" />
-        </svg>
-        Power Amplifier
-      </h3>
-      <p class="text-slate-400 text-sm">Status aktual perangkat keras relay pembantu.</p>
+  <!-- Page Header & Stats Row -->
+  <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-16 gap-8 px-2">
+    <div>
+      <h1 class="text-5xl font-black text-white tracking-tighter flex items-center gap-5">
+        <span class="w-3 h-12 bg-gradient-to-b from-primary-400 to-primary-700 rounded-full shadow-[0_0_20px_rgba(var(--primary-rgb),0.4)]"></span>
+        Control Center
+      </h1>
+      <p class="text-slate-500 mt-3 font-medium text-lg leading-relaxed italic opacity-80">Monitoring real-time hardware dan kendali siaran langsung sekolah.</p>
     </div>
     
-    <div class="flex flex-col sm:flex-row items-center gap-6">
-      <div class="bg-slate-800/50 dark:bg-black/40 px-6 py-3 rounded-2xl border border-slate-700 flex items-center gap-3 shadow-inner">
-        <div id="relayStatusIndicator" class="w-3 h-3 rounded-full bg-slate-600"></div>
-        <span id="relayStatusText" class="text-white font-bold tracking-wide text-sm whitespace-nowrap">LOADING...</span>
+    <!-- System Status Badges -->
+    <div class="flex flex-wrap gap-4">
+      <div class="glass-premium px-6 py-4 rounded-3xl border border-white/5 flex items-center gap-4">
+        <div class="w-10 h-10 rounded-xl bg-primary-500/10 flex items-center justify-center text-primary-400">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        </div>
+        <div>
+            <div class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Scheduler</div>
+            <div class="text-white font-black text-sm uppercase"><%= schedules.enabled ? 'Running' : 'Paused' %></div>
+        </div>
+      </div>
+      <div class="glass-premium px-6 py-4 rounded-3xl border border-white/5 flex items-center gap-4">
+        <div class="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-400">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5L14.25 2.25l-2.25 8.25h8.25L9.75 21.75l2.25-8.25H3.75z" />
+            </svg>
+        </div>
+        <div>
+            <div class="text-[9px] font-black text-slate-500 uppercase tracking-widest">STB Power</div>
+            <div class="text-white font-black text-sm uppercase">Active</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 1: HARDWARE & MONITORING -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    
+    <!-- Quick Call Card (Panggilan Cepat) (Mobile: 1, Desktop: 3) -->
+    <div class="order-1 lg:order-3 glass-premium p-10 rounded-[3.5rem] border border-white/5 flex flex-col justify-between hover:border-accent/30 transition-all duration-500 relative overflow-hidden group">
+      <div class="absolute -left-16 -bottom-16 w-64 h-64 bg-accent/20 rounded-full opacity-10 blur-[40px] pointer-events-none"></div>
+
+      <div class="flex items-center gap-6 mb-10 relative z-10">
+        <div class="w-16 h-16 bg-accent rounded-2xl text-white flex items-center justify-center shadow-2xl shadow-accent/30 flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-8 h-8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.287a6 6 0 010 7.427M12 18.75V5.25" />
+          </svg>
+        </div>
+        <div>
+          <h3 class="font-black text-white text-xl tracking-tight leading-none">Panggilan Cepat</h3>
+          <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-2 italic">Aksi Instan</p>
+        </div>
       </div>
       
-      <div class="flex gap-3 bg-slate-800/50 p-1.5 rounded-2xl border border-slate-700">
-        <button id="btnAmpliOn" onclick="controlAmpli('on')" 
-                class="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-3 rounded-xl font-bold transition-all hover:shadow-lg hover:shadow-emerald-500/30 active:scale-95 disabled:opacity-30 disabled:hover:shadow-none">
-          ON
-        </button>
-        <button id="btnAmpliOff" onclick="controlAmpli('off')" 
-                class="bg-red-500 hover:bg-red-600 text-white px-8 py-3 rounded-xl font-bold transition-all hover:shadow-lg hover:shadow-red-500/30 active:scale-95 disabled:opacity-30 disabled:hover:shadow-none">
-          OFF
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Toggle Jadwal Reguler -->
-<div class="glass p-6 rounded-3xl mb-8 border-slate-200 dark:border-slate-800 shadow-sm transition-all">
-  <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-    <div class="flex items-center gap-4">
-      <div class="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 p-3 rounded-2xl transition-colors">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M6 13.5V3.75m0 9.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 010 3m0-3a1.5 1.5 0 000 3m0 9.75V10.5" />
-        </svg>
-      </div>
-      <div>
-        <h3 class="font-bold text-slate-800 dark:text-slate-100 transition-colors">Status Penjadwalan</h3>
-        <p class="text-xs text-slate-500 dark:text-slate-400">Operasi otomatis bel harian.</p>
-      </div>
-    </div>
-    <form method="POST" action="/schedule/toggle">
-      <% if (locals.schedules && schedules.enabled) { %>
-        <button type="submit" class="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/30 px-6 py-2 rounded-xl font-bold hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors flex items-center gap-2">
-          <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-          AKTIF
-        </button>
-      <% } else { %>
-        <button type="submit" class="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 px-6 py-2 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center gap-2">
-          <span class="w-2 h-2 bg-slate-400 rounded-full"></span>
-          NONAKTIF
-        </button>
-      <% } %>
-    </form>
-  </div>
-</div>
-
-<!-- Form Import -->
-<div id="importForm" class="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-blue-100 dark:border-blue-900/40 shadow-xl shadow-blue-500/5 mb-8 hidden transition-all">
-  <h3 class="font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2 transition-colors">
-    <span class="text-blue-500">📥</span> Import Konfigurasi
-  </h3>
-  <form method="POST" action="/import" enctype="multipart/form-data" class="flex flex-col sm:flex-row gap-4">
-    <input type="file" name="importfile" accept=".json" required class="flex-1 p-3 border border-slate-200 dark:border-slate-700 rounded-xl text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 dark:file:bg-blue-900/30 file:text-blue-700 dark:file:text-blue-400 hover:file:bg-blue-100 dark:hover:file:bg-blue-800 bg-transparent text-slate-500 dark:text-slate-400 transition-all" />
-    <div class="flex gap-2">
-      <button type="submit" class="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 font-bold transition-all shadow-lg shadow-blue-500/20">Proses</button>
-      <button type="button" onclick="toggleImportForm()"
-        class="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-6 py-3 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 font-bold transition-all">Batal</button>
-    </div>
-  </form>
-</div>
-
-  <!-- 🚀 AKSI CEPAT (Quick Actions) -->
-  <div class="mb-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-    <div class="flex items-center gap-2 mb-4 ml-2">
-      <div class="w-1.5 h-6 bg-primary-600 dark:bg-primary-500 rounded-full transition-all"></div>
-      <h2 class="text-xs font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 transition-colors">Aksi Cepat (Panggilan)</h2>
-    </div>
-
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-      <!-- Card Panggilan Ketua Kelas -->
-      <div class="relative group">
-        <div class="absolute -inset-0.5 bg-gradient-to-r from-primary-600 to-indigo-600 rounded-[2rem] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-        <div class="relative bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-[2rem] shadow-sm flex items-center justify-between gap-4 transition-all">
-          <div class="flex items-center gap-4">
-            <div class="w-14 h-14 bg-primary-50 dark:bg-primary-900/30 rounded-2xl flex items-center justify-center text-primary-600 dark:text-primary-400 transition-all group-hover:scale-110">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.062.51.111.769.148m-.769-.148a20.247 20.247 0 010-9.04m.769 9.188a10.175 10.175 0 005.139 1.856m-5.139-1.856c.253.063.51.111.769.148m4.37 1.708l3.111 2.333a1.125 1.125 0 001.765-.901v-8.333a1.125 1.125 0 00-1.765-.901l-3.111 2.333m0 6.066a10.175 10.175 0 005.139-1.856m-5.139 1.856a10.137 10.137 0 01-4.37-1.708m0-6.066a10.137 10.137 0 014.37-1.708m-4.37 1.708a10.27 10.27 0 010 6.066m3.374 3.033A1.125 1.125 0 0115 19.125v-1.125" />
+      <div class="mt-auto w-full relative z-10">
+        <% if (locals.quickCallFile) { %>
+          <form method="POST" action="/play">
+            <input type="hidden" name="file" value="<%= quickCallFile %>">
+            <button type="submit" class="w-full h-[88px] bg-accent hover:bg-accent/80 text-white rounded-[2.5rem] font-black text-[11px] uppercase tracking-[0.3em] transition-all shadow-xl shadow-accent/30 flex items-center justify-center gap-4 active:scale-95 group border-2 border-transparent">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 group-hover:scale-110 transition-transform">
+                <path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" />
               </svg>
-            </div>
-            <div>
-              <h3 class="font-black text-slate-800 dark:text-slate-100 text-sm tracking-tight transition-colors">Ketua Kelas</h3>
-              <p class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest mt-0.5">Panggilan Cepat</p>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-2">
-            <% if (quickCallFile) { %>
-              <form method="POST" action="/play" class="inline">
-                <input type="hidden" name="file" value="<%= quickCallFile %>">
-                <button type="submit" class="w-12 h-12 rounded-xl bg-primary-600 hover:bg-primary-700 text-white flex items-center justify-center transition-all shadow-lg shadow-primary-500/30 active:scale-90" title="Panggil Sekarang">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
-                    <path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" />
-                  </svg>
-                </button>
-              </form>
-              <button onclick="document.getElementById('modalQuickCall').classList.remove('hidden')" class="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-primary-500 transition-all border border-slate-100 dark:border-slate-700 shadow-sm" title="Ganti Suara">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0m-9.75 0h9.75" />
-                </svg>
-              </button>
-            <% } else { %>
-              <button onclick="document.getElementById('modalQuickCall').classList.remove('hidden')" class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-primary-500/20 active:scale-95 leading-none">
-                SET PINTASAN
-              </button>
-            <% } %>
-          </div>
-        </div>
-      </div>
-
-      <!-- Card Pengumuman Langsung (Mic) -->
-      <div id="micWidget" class="relative group">
-        <div class="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-pink-600 rounded-[2rem] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-        <div class="relative bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-[2rem] shadow-sm flex items-center justify-between gap-4 transition-all">
-          <div class="flex items-center gap-4">
-            <div id="micStatusIcon" class="w-14 h-14 bg-purple-50 dark:bg-purple-900/30 rounded-2xl flex items-center justify-center text-purple-600 dark:text-purple-400 transition-all">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
-              </svg>
-            </div>
-            <div>
-              <h3 class="font-black text-slate-800 dark:text-slate-100 text-sm tracking-tight transition-colors">Siaran Langsung</h3>
-              <p id="micStatusText" class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest mt-0.5 whitespace-nowrap">Tahan Untuk Bicara</p>
-            </div>
-          </div>
-
-          <div class="relative">
-            <button 
-              id="btnMic"
-              class="w-16 h-16 rounded-full bg-purple-600 hover:bg-purple-500 text-white flex items-center justify-center transition-all shadow-lg shadow-purple-500/30 active:scale-90 select-none touch-none"
-              title="Tahan untuk Bicara"
-            >
-              <div id="micPulse" class="absolute inset-0 rounded-full bg-purple-400 animate-ping opacity-0"></div>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8 relative z-10">
-                <path d="M8.25 4.5a3.75 3.75 0 117.5 0v8.25a3.75 3.75 0 11-7.5 0V4.5z" />
-                <path d="M6 10.5a.75.75 0 01.75.75v1.5a5.25 5.25 0 1010.5 0v-1.5a.75.75 0 011.5 0v1.5a6.75 6.75 0 11-13.5 0v-1.5a.75.75 0 01.75-.75z" />
-                <path d="M12 18.75a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V19.5a.75.75 0 01.75-.75z" />
-              </svg>
+              <span>PANGGIL</span>
             </button>
-          </div>
-        </div>
+          </form>
+        <% } else { %>
+          <a href="/audio" class="w-full h-[88px] bg-white/5 text-slate-500 rounded-[2.5rem] font-black text-[11px] uppercase flex items-center justify-center text-center border border-dashed border-white/10 hover:border-accent hover:text-accent transition-all italic tracking-[0.3em]">SET PANGGILAN</a>
+        <% } %>
       </div>
     </div>
-  </div>
 
-<div class="grid grid-cols-1 xl:grid-cols-12 gap-8">
-  <!-- Jadwal Reguler Per Hari -->
-  <div class="xl:col-span-12">
-    <div class="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm transition-all">
-      <h2 class="text-2xl font-bold mb-6 text-slate-800 dark:text-slate-100 flex items-center gap-3 transition-colors">
-        <span class="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+    <!-- Power Amplifier Hub (Mobile: 2, Desktop: 1) -->
+    <div class="order-2 lg:order-1 glass-premium p-10 rounded-[3.5rem] border border-white/5 flex flex-col justify-between hover:border-primary-500/30 transition-all duration-500 relative overflow-hidden group">
+      <div class="absolute -right-16 -top-16 w-64 h-64 bg-primary-600 rounded-full opacity-[0.03] blur-[40px] group-hover:opacity-[0.07] transition-opacity duration-1000 pointer-events-none"></div>
+
+      <div class="flex items-center gap-6 mb-10 relative z-10">
+        <div id="relayStatusRing" class="w-16 h-16 bg-slate-800 rounded-2xl border-[3px] border-slate-700 text-white flex items-center justify-center shadow-2xl transition-all duration-700 flex-shrink-0">
+          <div id="relayStatusIndicator" class="w-3 h-3 rounded-full bg-slate-600 ring-4 ring-white/5 mx-auto transition-all duration-500"></div>
+        </div>
+        <div>
+          <h3 class="font-black text-white text-xl tracking-tight leading-none">Power Amp</h3>
+          <p id="relayStatusText" class="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-2 italic">Status Unknown</p>
+        </div>
+      </div>
+      
+      <div class="mt-auto w-full relative z-10">
+        <button id="btnAmpliToggle" onclick="toggleAmpliBtn()" class="w-full h-[88px] bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-[2.5rem] font-black text-[11px] uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-4 active:scale-95 border border-white/10">
+          <span id="ampliToggleStatusDot" class="w-2 h-2 bg-slate-600 rounded-full"></span>
+          <span id="ampliToggleText">MENUNGGU STATUS...</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Schedule Status Card (Mobile: 3, Desktop: 2) -->
+    <div class="order-3 lg:order-2 glass-premium p-10 rounded-[3.5rem] border border-white/5 flex flex-col justify-between hover:border-primary-500/30 transition-all duration-500 relative overflow-hidden group">
+      <div class="absolute -bottom-20 -right-20 w-64 h-64 bg-primary-500/20 rounded-full opacity-[0.03] blur-[50px] pointer-events-none"></div>
+
+      <div class="flex items-center gap-6 mb-10 relative z-10">
+        <div class="w-16 h-16 bg-primary-600 rounded-2xl text-white flex items-center justify-center shadow-2xl shadow-primary-600/30 flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-8 h-8">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-        </span>
-        Jadwal Reguler Mingguan
-      </h2>
-      
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
-        <% const days = [
-          { key: 'mon', name: 'Senin', color: 'blue' },
-          { key: 'tue', name: 'Selasa', color: 'indigo' },
-          { key: 'wed', name: 'Rabu', color: 'violet' },
-          { key: 'thu', name: 'Kamis', color: 'purple' },
-          { key: 'fri', name: 'Jumat', color: 'emerald' },
-          { key: 'sat', name: 'Sabtu', color: 'orange' },
-          { key: 'sun', name: 'Minggu', color: 'rose' }
-        ]; %>
-
-        <% days.forEach(day => { %>
-          <div class="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-100 dark:border-slate-700/50 flex flex-col hover:border-<%= day.color %>-200 dark:hover:border-<%= day.color %>-500/30 transition-all group/day">
-            <h3 class="font-bold mb-4 text-<%= day.color %>-600 dark:text-<%= day.color %>-400 flex items-center justify-between transition-colors">
-              <span><%= day.name %></span>
-              <span class="text-[10px] bg-<%= day.color %>-100 dark:bg-<%= day.color %>-900/30 px-2 py-1 rounded-full uppercase tracking-wider text-<%= day.color %>-700 dark:text-<%= day.color %>-300 transition-colors"><%= day.key %></span>
-            </h3>
-            
-            <ul class="space-y-2 mb-4 flex-1">
-              <% const list = schedules[day.key] || []; %>
-              <% list.forEach((s, i) => { %>
-                <!-- View Mode -->
-                <li id="sched-view-<%= day.key %>-<%= i %>" class="group flex justify-between items-center bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700 hover:border-<%= day.color %>-200 dark:hover:border-<%= day.color %>-500/30 hover:shadow-sm transition-all">
-                  <div class="flex flex-col min-w-0 flex-1">
-                    <span class="text-sm font-bold text-slate-700 dark:text-slate-200 leading-tight transition-colors"><%= s.time %></span>
-                    <span class="text-[10px] text-slate-400 dark:text-slate-500 truncate max-w-full transition-colors" title="<%= s.sound %>"><%= s.sound %></span>
-                  </div>
-                  <div class="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
-                    <button type="button" onclick="toggleEditSchedule('<%= day.key %>', <%= i %>)" class="bg-blue-50 dark:bg-blue-900/20 text-blue-500 dark:text-blue-400 hover:bg-blue-500 dark:hover:bg-blue-500 hover:text-white w-7 h-7 rounded-lg flex items-center justify-center transition-all" title="Edit">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
-                        <path d="M5.433 13.917l1.262-3.155A4 4 0 017.58 9.42l6.92-6.918a2.121 2.121 0 013 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 01-.65-.65z" />
-                      </svg>
-                    </button>
-                    <form method="POST" action="/schedule/remove" class="inline" onsubmit="return confirmDelete()">
-                      <input type="hidden" name="day" value="<%= day.key %>" />
-                      <input type="hidden" name="index" value="<%= i %>" />
-                      <button type="submit" class="bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 hover:bg-red-500 dark:hover:bg-red-500 hover:text-white w-7 h-7 rounded-lg flex items-center justify-center transition-all" title="Hapus">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
-                          <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
-                        </svg>
-                      </button>
-                    </form>
-                  </div>
-                </li>
-                <!-- Edit Mode (hidden by default) -->
-                <li id="sched-edit-<%= day.key %>-<%= i %>" class="hidden">
-                  <form method="POST" action="/schedule/edit" class="bg-<%= day.color %>-50/50 dark:bg-<%= day.color %>-900/10 p-3 rounded-xl border border-<%= day.color %>-200 dark:border-<%= day.color %>-700/50 space-y-2">
-                    <input type="hidden" name="day" value="<%= day.key %>" />
-                    <input type="hidden" name="index" value="<%= i %>" />
-                    <div class="flex gap-2">
-                      <input type="time" name="time" value="<%= s.time %>" class="px-2 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded-lg flex-1 outline-none focus:border-<%= day.color %>-400 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300" required />
-                      <select name="sound" class="px-2 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded-lg flex-1 min-w-0 outline-none focus:border-<%= day.color %>-400 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 truncate" required>
-                        <% musicFiles.forEach(f => { %>
-                          <option value="<%= f %>" <%= f === s.sound ? 'selected' : '' %>><%= f %></option>
-                        <% }) %>
-                      </select>
-                    </div>
-                    <div class="flex gap-2">
-                      <button type="submit" class="flex-1 bg-<%= day.color %>-600 hover:bg-<%= day.color %>-700 text-white py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all">Simpan</button>
-                      <button type="button" onclick="toggleEditSchedule('<%= day.key %>', <%= i %>)" class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">Batal</button>
-                    </div>
-                  </form>
-                </li>
-              <% }) %>
-              <% if (list.length === 0) { %>
-                <li class="text-slate-400 dark:text-slate-600 text-xs italic py-4 text-center border border-dashed border-slate-200 dark:border-slate-700 rounded-xl transition-colors">Belum ada jadwal</li>
-              <% } %>
-            </ul>
-
-            <form method="POST" action="/schedule/add" class="mt-auto pt-4 border-t border-slate-200/50 dark:border-slate-700/50 flex flex-col gap-2">
-              <input type="hidden" name="day" value="<%= day.key %>" />
-              <div class="flex gap-2">
-                <input type="time" name="time" class="px-2 py-1 text-xs border border-slate-200 dark:border-slate-700 rounded-lg flex-1 outline-none focus:border-<%= day.color %>-300 dark:focus:border-<%= day.color %>-500 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 transition-all" required />
-                <select name="sound" class="px-2 py-1 text-xs border border-slate-200 dark:border-slate-700 rounded-lg flex-1 min-w-0 outline-none focus:border-<%= day.color %>-300 dark:focus:border-<%= day.color %>-500 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 transition-all truncate" required>
-                  <% musicFiles.forEach(f => { %>
-                    <option value="<%= f %>"><%= f %></option>
-                  <% }) %>
-                </select>
-              </div>
-              <button type="submit" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-800 dark:hover:bg-slate-700 hover:text-white dark:hover:text-white text-slate-600 dark:text-slate-400 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all">
-                Tambah Jadwal
-              </button>
-            </form>
-          </div>
-        <% }) %>
-      </div>
-    </div>
-  </div>
-
-  <!-- Row 2: Special Schedules and Music -->
-  <div class="xl:col-span-5">
-    <div class="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm h-full transition-all">
-      <h2 class="text-2xl font-bold mb-6 text-slate-800 dark:text-slate-100 flex items-center gap-3 transition-colors">
-        <span class="p-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z" />
-          </svg>
-        </span>
-        Jadwal Khusus
-      </h2>
-      
-      <ul class="space-y-3 mb-8 pr-2 transition-all">
-        <% special.forEach((s, i) => { %>
-          <!-- View Mode -->
-          <li id="special-view-<%= i %>" class="flex items-center justify-between bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-all group">
-            <div class="flex items-center gap-3 min-w-0 flex-1">
-              <div class="bg-white dark:bg-slate-700 p-2 rounded-xl text-center shadow-sm min-w-[60px] shrink-0 transition-colors">
-                <div class="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold tracking-tighter transition-colors"><%= s.date.split('-')[0] %></div>
-                <div class="text-sm font-bold text-indigo-600 dark:text-indigo-400 transition-colors"><%= s.date.split('-')[1] %>-<%= s.date.split('-')[2] %></div>
-              </div>
-              <div class="min-w-0 flex-1">
-                <div class="text-sm font-bold text-slate-700 dark:text-slate-200 transition-colors"><%= s.time %></div>
-                <div class="text-[10px] text-slate-400 dark:text-slate-500 truncate max-w-full transition-colors" title="<%= s.sound %>"><%= s.sound %></div>
-              </div>
-            </div>
-            <div class="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
-              <button type="button" onclick="toggleEditSpecial(<%= i %>)" class="bg-blue-50 dark:bg-blue-900/20 text-blue-500 dark:text-blue-400 hover:bg-blue-500 hover:text-white w-8 h-8 rounded-xl flex items-center justify-center transition-all" title="Edit">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
-                  <path d="M5.433 13.917l1.262-3.155A4 4 0 017.58 9.42l6.92-6.918a2.121 2.121 0 013 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 01-.65-.65z" />
-                </svg>
-              </button>
-              <form method="POST" action="/special/remove" class="inline" onsubmit="return confirmDelete()">
-                <input type="hidden" name="index" value="<%= i %>" />
-                <button class="bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 hover:bg-red-500 hover:text-white w-8 h-8 rounded-xl flex items-center justify-center transition-all" title="Hapus">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
-                    <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
-                  </svg>
-                </button>
-              </form>
-            </div>
-          </li>
-          <!-- Edit Mode (hidden by default) -->
-          <li id="special-edit-<%= i %>" class="hidden">
-            <form method="POST" action="/special/edit" class="bg-indigo-50/50 dark:bg-indigo-900/10 p-4 rounded-2xl border border-indigo-200 dark:border-indigo-700/50 space-y-3">
-              <input type="hidden" name="index" value="<%= i %>" />
-              <div class="grid grid-cols-2 gap-3">
-                <div class="flex flex-col gap-1">
-                  <label class="text-[10px] text-slate-400 font-bold uppercase px-1">Tanggal</label>
-                  <input type="date" name="date" value="<%= s.date %>" class="px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-xl w-full outline-none focus:border-indigo-400 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 relative z-10" required />
-                </div>
-                <div class="flex flex-col gap-1">
-                  <label class="text-[10px] text-slate-400 font-bold uppercase px-1">Jam</label>
-                  <input type="time" name="time" value="<%= s.time %>" class="px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-xl w-full outline-none focus:border-indigo-400 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 relative z-10" required />
-                </div>
-              </div>
-              <div class="flex flex-col gap-1">
-                <label class="text-[10px] text-slate-400 font-bold uppercase px-1">Pilih Suara</label>
-                <select name="sound" class="px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-xl w-full outline-none focus:border-indigo-400 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 truncate" required>
-                  <% musicFiles.forEach(f => { %>
-                    <option value="<%= f %>" <%= f === s.sound ? 'selected' : '' %>><%= f %></option>
-                  <% }) %>
-                </select>
-              </div>
-              <div class="flex gap-2">
-                <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl transition-all shadow-lg shadow-indigo-600/20">Simpan</button>
-                <button type="button" onclick="toggleEditSpecial(<%= i %>)" class="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">Batal</button>
-              </div>
-            </form>
-          </li>
-        <% }) %>
-        <% if (special.length === 0) { %>
-          <li class="text-slate-400 dark:text-slate-600 italic py-12 text-center border border-dashed border-slate-200 dark:border-slate-700 rounded-2xl transition-colors">
-            Belum ada jadwal khusus per tanggal
-          </li>
-        <% } %>
-      </ul>
-
-      <div class="bg-indigo-50/50 dark:bg-indigo-900/10 p-6 rounded-2xl border border-indigo-100 dark:border-indigo-900/40 transition-colors relative z-20">
-        <h4 class="text-xs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-widest mb-4 transition-colors">Tambah Jadwal Baru</h4>
-        <form method="POST" action="/special/add" class="space-y-3">
-          <div class="grid grid-cols-2 gap-3">
-            <div class="flex flex-col gap-1">
-              <label class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase px-1 transition-colors">Tanggal</label>
-              <input type="date" name="date" class="px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-xl w-full outline-none focus:border-indigo-400 dark:focus:border-indigo-500 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 transition-all relative z-10" required />
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase px-1 transition-colors">Jam</label>
-              <input type="time" name="time" class="px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-xl w-full outline-none focus:border-indigo-400 dark:focus:border-indigo-500 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 transition-all relative z-10" required />
-            </div>
-          </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase px-1 transition-colors">Pilih Suara</label>
-            <select name="sound" class="px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-xl w-full outline-none focus:border-indigo-400 dark:focus:border-indigo-500 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 transition-all truncate" required>
-              <% musicFiles.forEach(f => { %>
-                <option value="<%= f %>"><%= f %></option>
-              <% }) %>
-            </select>
-          </div>
-          <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-indigo-600/20 active:scale-[0.98]">
-            Simpan Jadwal Khusus
-          </button>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- Music Section -->
-  <div class="xl:col-span-7">
-    <div class="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm h-full flex flex-col transition-all">
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-3 transition-colors">
-          <span class="p-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 9l10.5-3m0 6.553v3.75a2.25 2.25 0 01-1.632 2.163l-1.32.377a1.803 1.803 0 11-.99-3.467l1.246-.356A.75.75 0 0017 14.27V10.74a.75.75 0 00-.52-.714L7.59 7.37a.75.75 0 00-.958.713v10.158c0 .85-.66 1.553-1.508 1.625l-.933.08a1.728 1.728 0 01-1.869-1.69c0-.915.68-1.683 1.592-1.748l1.107-.08a.75.75 0 00.697-.749V4.833a.75.75 0 01.963-.718l11.739 3.354a.75.75 0 01.54.718v2.261zm-7 5c0 .85-.66 1.553-1.508 1.625l-.933.08a1.728 1.728 0 01-1.869-1.69c0-.915.68-1.683 1.592-1.748l1.107-.08a.75.75 0 00.697-.749V10a.75.75 0 01.963-.718l11.739 3.354a.75.75 0 01.54.718v2.261z" />
-            </svg>
-          </span>
-          Pustaka Audio
-        </h2>
-        <form method="POST" action="/stop" class="inline">
-          <button type="submit" class="bg-slate-900 dark:bg-slate-800 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-red-600 dark:hover:bg-red-600 transition-all flex items-center gap-2 group">
-            <span class="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse group-hover:animate-none"></span>
-            STOP SEMUA AUDIO
-          </button>
-        </form>
-      </div>
-
-      <!-- Upload form integrated -->
-      <form method="POST" action="/upload" enctype="multipart/form-data" class="mb-6 flex gap-2">
-        <input type="file" name="audiofile" accept=".mp3,.wav" required class="flex-1 text-xs text-slate-500 dark:text-slate-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-emerald-50 dark:file:bg-emerald-900/40 file:text-emerald-700 dark:file:text-emerald-300 hover:file:bg-emerald-100 dark:hover:file:bg-emerald-800 transition-all p-2 border border-slate-100 dark:border-slate-700 rounded-2xl bg-transparent" />
-        <button type="submit" class="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-          </svg>
-          Upload
-        </button>
-      </form>
-
-      <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 max-h-[600px] transition-all">
-        <div class="grid grid-cols-1 gap-3">
-          <% musicFiles.forEach(f => { %>
-            <div class="group flex flex-col md:flex-row justify-between items-start md:items-center p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:bg-white dark:hover:bg-slate-800 hover:border-emerald-200 dark:hover:border-emerald-500/30 transition-all hover:shadow-sm w-full">
-              <div class="flex items-center gap-3 mb-3 md:mb-0 min-w-0 flex-1 w-full md:w-auto">
-                <div class="w-10 h-10 flex-shrink-0 bg-white dark:bg-slate-700 rounded-xl flex items-center justify-center text-slate-400 dark:text-slate-500 group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-all shadow-sm font-bold text-[10px] uppercase">
-                  <%= f.split('.').pop() %>
-                </div>
-                <div class="min-w-0 flex-1 overflow-hidden">
-                  <div class="text-sm font-bold text-slate-700 dark:text-slate-200 truncate transition-colors" title="<%= f %>"><%= f %></div>
-                  <div class="text-[10px] text-slate-400 dark:text-slate-500 font-medium transition-colors uppercase tracking-widest">Audio File</div>
-                </div>
-              </div>
-
-              <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
-                <a href="/preview/<%= f %>" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center w-9 h-9 rounded-xl text-blue-500 dark:text-blue-400 hover:text-white hover:bg-blue-500 hover:border-blue-500 transition-all" title="Preview Audio">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.287a6 6 0 010 7.427M12 6.75l6.75 6.75-6.75 6.75V6.75z" />
-                  </svg>
-                </a>
-                <form method="POST" action="/play" class="inline">
-                  <input type="hidden" name="file" value="<%= f %>" />
-                  <button type="submit" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center w-9 h-9 rounded-xl text-emerald-600 dark:text-emerald-400 hover:text-white hover:bg-emerald-500 hover:border-emerald-500 transition-all" title="Play on STB">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
-                      <path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" />
-                    </svg>
-                  </button>
-                </form>
-                <form method="POST" action="/rename" class="flex items-center gap-1 group/rename">
-                  <input type="hidden" name="oldname" value="<%= f %>" />
-                  <input type="text" name="newname" value="<%= f %>" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[10px] px-2 py-1.5 rounded-lg w-24 sm:focus:w-40 transition-all outline-none focus:border-blue-400 dark:focus:border-blue-500 text-slate-700 dark:text-slate-300" maxlength="50" onfocus="this.select()" />
-                  <button type="submit" class="text-slate-300 dark:text-slate-600 hover:text-blue-500 dark:hover:text-blue-400 transition-colors" title="Ubah Nama">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
-                      <path d="M5.433 13.917l1.262-3.155A4 4 0 017.58 9.42l6.92-6.918a2.121 2.121 0 013 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 01-.65-.65z" />
-                      <path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0010 3H4.75A2.75 2.75 0 002 5.75v9.5A2.75 2.75 0 004.75 18h9.5A2.75 2.75 0 0017 15.25V10a.75.75 0 00-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5z" />
-                    </svg>
-                  </button>
-                </form>
-                <form method="POST" action="/music/delete" class="inline" onsubmit="return confirmDelete()">
-                  <input type="hidden" name="file" value="<%= f %>" />
-                  <button type="submit" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center w-9 h-9 rounded-xl text-red-500 dark:text-red-400 hover:text-white hover:bg-red-500 hover:border-red-500 transition-all" title="Hapus">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                    </svg>
-                  </button>
-                </form>
-              </div>
-            </div>
-          <% }) %>
+        </div>
+        <div>
+          <h3 class="font-black text-white text-xl tracking-tight leading-none">Automasi Bel</h3>
+          <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-2 italic">Scheduler Engine</p>
         </div>
       </div>
+      
+      <div class="mt-auto w-full relative z-10">
+        <form method="POST" action="/schedule/toggle">
+          <% if (locals.schedules && schedules.enabled) { %>
+            <button type="submit" class="w-full h-[88px] bg-primary-500 hover:bg-primary-600 text-white rounded-[2.5rem] font-black text-[11px] uppercase tracking-[0.3em] transition-all shadow-xl shadow-primary-500/30 flex items-center justify-center gap-4 active:scale-95 group border-2 border-transparent">
+              <span class="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+              AKTIF
+            </button>
+          <% } else { %>
+            <button type="submit" class="w-full h-[88px] bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-[2.5rem] font-black text-[11px] uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-4 active:scale-95 border border-white/10">
+              <span class="w-2 h-2 bg-slate-600 rounded-full"></span>
+              NONAKTIF
+            </button>
+          <% } %>
+        </form>
+      </div>
     </div>
+  </div>
+
+  <!-- Live Microphone Widget -->
+  <div class="mt-8">
+      <div class="relative group">
+          <div class="absolute -inset-1 bg-gradient-to-r from-primary-600 via-accent to-primary-400 rounded-[4.5rem] blur-2xl opacity-10 group-hover:opacity-30 transition duration-1000"></div>
+          <div class="relative glass-premium p-12 lg:p-16 rounded-[4rem] border border-white/5 flex flex-col xl:flex-row items-center justify-between gap-12 shadow-2xl">
+            <div class="flex items-center gap-10">
+              <div id="micStatusIcon" class="w-24 h-24 bg-white/5 text-slate-400 flex items-center justify-center rounded-[2.5rem] transition-all duration-700 border border-white/5">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-12 h-12">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-black text-white text-4xl tracking-tighter mb-4 leading-none italic">Siaran Mikrofon</h3>
+                <p id="micStatusText" class="text-sm font-black text-slate-500 uppercase tracking-[0.4em] italic leading-none">Push to Talk / Tahan Bicara</p>
+              </div>
+            </div>
+  
+            <div class="relative flex items-center justify-center">
+              <div id="micPulse" class="absolute inset-0 rounded-full bg-accent animate-ping opacity-0"></div>
+              <button id="btnMic" class="relative z-20 w-36 h-36 rounded-full bg-gradient-to-br from-primary-600 to-accent text-white flex items-center justify-center transition-all shadow-[0_25px_60px_rgba(var(--primary-rgb),0.4)] active:scale-90 select-none touch-none hover:scale-105 active:shadow-inner">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-16 h-16 transition-transform group-active:scale-110">
+                  <path d="M8.25 4.5a3.75 3.75 0 117.5 0v8.25a3.75 3.75 0 11-7.5 0V4.5z" />
+                  <path d="M6 10.5a.75.75 0 01.75.75v1.5a5.25 5.25 0 1010.5 0v-1.5a.75.75 0 011.5 0v1.5a6.75 6.75 0 11-13.5 0v-1.5a.75.75 0 01.75-.75z" />
+                  <path d="M12 18.75a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V19.5a.75.75 0 01.75-.75z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mt-8 px-8 flex items-center gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 text-slate-600">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+            </svg>
+            <p class="text-[10px] font-black text-slate-600 uppercase tracking-widest italic leading-none">Fitur mikrofon memerlukan koneksi HTTPS atau localhost demi keamanan browser.</p>
+      </div>
   </div>
 </div>
 
-<style>
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-  }
-  .animate-fade-in {
-    animation: fadeIn 0.3s ease-out;
-  }
-  .animate-pulse-slow {
-    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-</style>
-
-<!-- 🔊 Indikator Audio Sedang Diputar (Fixed) -->
-<div id="nowPlayingIndicator" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900/90 dark:bg-emerald-900/90 backdrop-blur-xl border border-slate-700 dark:border-emerald-500/30 px-6 py-4 rounded-3xl shadow-2xl z-50 transition-all duration-500 transform translate-y-32 opacity-0 flex items-center gap-4">
-  <div class="relative">
-    <div class="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center animate-pulse shadow-[0_0_20px_rgba(16,185,129,0.5)]">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 text-white">
-        <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 001.5 12c0 .898.121 1.768.35 2.595.341 1.24 1.518 1.905 2.659 1.905h1.93l4.5 4.5c.945.945 2.561.276 2.561-1.06V4.06zM18.584 5.106a.75.75 0 011.06 0c3.808 3.807 3.808 9.98 0 13.788a.75.75 0 11-1.06-1.06 8.25 8.25 0 000-11.668.75.75 0 010-1.06z" />
-        <path d="M15.932 7.757a.75.75 0 011.061 0 4.5 4.5 0 010 6.364.75.75 0 01-1.06-1.06 3 3 0 000-4.242.75.75 0 010-1.062z" />
-      </svg>
-    </div>
-    <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-slate-900 animate-ping"></div>
-  </div>
-  <div>
-    <div class="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400 mb-0.5">Sedang Diputar</div>
-    <div id="activeAudioName" class="text-white font-bold text-sm truncate max-w-[200px]">Memuat...</div>
-  </div>
-  <form method="POST" action="/stop" class="ml-2">
-    <button type="submit" class="bg-red-500 hover:bg-red-600 text-white p-2 rounded-xl transition-all shadow-lg shadow-red-500/20 active:scale-95">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-      </svg>
-    </button>
-  </form>
-</div>
 <script>
-  let pollingInterval;
+  const socket = io();
   let isProcessing = false;
 
-  // =======================
-  // LIVE MICROPHONE LOGIC
-  // =======================
-  const socket = io();
+  const indicator = document.getElementById('relayStatusIndicator');
+  const ring = document.getElementById('relayStatusRing');
+  const text = document.getElementById('relayStatusText');
+  const btnAmpliToggle = document.getElementById('btnAmpliToggle');
+  const ampliToggleStatusDot = document.getElementById('ampliToggleStatusDot');
+  const ampliToggleText = document.getElementById('ampliToggleText');
+  let currentAmpliState = 'off';
+  
+  socket.on('ampli-state', (data) => {
+    currentAmpliState = data.status;
+    if (data.status === 'on') {
+      indicator.className = 'w-4 h-4 rounded-full bg-primary-400 shadow-[0_0_20px_rgba(var(--primary-rgb),0.5)] ring-4 ring-primary-400/20';
+      ring.style.borderColor = 'var(--primary)';
+      ring.style.boxShadow = 'inset 0 0 30px rgba(var(--primary-rgb),0.1), 0 0 30px rgba(var(--primary-rgb),0.1)';
+      text.innerText = 'Power Active';
+      text.className = 'text-primary-400 font-black tracking-[0.2em] text-[11px] uppercase';
+      
+      if (btnAmpliToggle) {
+        btnAmpliToggle.className = 'w-full h-[88px] bg-primary-500 hover:bg-primary-600 text-white rounded-[2.5rem] font-black text-[11px] uppercase tracking-[0.3em] transition-all shadow-xl shadow-primary-500/30 flex items-center justify-center gap-4 active:scale-95 group border-2 border-transparent';
+        ampliToggleStatusDot.className = 'w-2 h-2 bg-white rounded-full animate-pulse';
+        ampliToggleText.innerText = 'AKTIF';
+      }
+    } else {
+      indicator.className = 'w-4 h-4 rounded-full bg-slate-600 ring-4 ring-white/5';
+      ring.style.borderColor = '#1e293b';
+      ring.style.boxShadow = 'none';
+      text.innerText = 'Standby Mode';
+      text.className = 'text-slate-500 font-black tracking-[0.2em] text-[11px] uppercase';
+      
+      if (btnAmpliToggle) {
+        btnAmpliToggle.className = 'w-full h-[88px] bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-[2.5rem] font-black text-[11px] uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-4 active:scale-95 border border-white/10';
+        ampliToggleStatusDot.className = 'w-2 h-2 bg-slate-600 rounded-full';
+        ampliToggleText.innerText = 'NONAKTIF';
+      }
+    }
+  });
+
+  function toggleAmpliBtn() {
+    if (isProcessing) return;
+    isProcessing = true;
+    
+    ampliToggleText.innerText = 'MEMPROSES...';
+    
+    const cmd = currentAmpliState === 'on' ? 'off' : 'on';
+    fetch(`/ampli/${cmd}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    }).finally(() => setTimeout(() => isProcessing = false, 500));
+  }
+
+  // Mic Logic (Push to Talk)
   const btnMic = document.getElementById('btnMic');
   const micPulse = document.getElementById('micPulse');
   const micStatusText = document.getElementById('micStatusText');
   const micStatusIcon = document.getElementById('micStatusIcon');
-  
-  let mediaRecorder = null;
+  let mediaRecorder;
   let isBroadcasting = false;
 
   async function startBroadcasting() {
-    if (isBroadcasting) return;
-
-    // Check for Secure Context (HTTPS/localhost)
-    if (!window.isSecureContext) {
-      alert('❌ ERROR KERTASAN/KEAMANAN:\n\n' +
-            'Fitur Mikrofon mewajibkan koneksi aman (HTTPS). Browser Anda saat ini memblokir akses.\n\n' +
-            'SOLUSI:\n' +
-            '1. Pastikan URL dimulai dengan https://\n' +
-            '2. Jika menggunakan Chrome lewat IP lokal, buka chrome://flags/#unsafely-treat-insecure-origin-as-secure\n' +
-            '3. Masukkan alamat IP STB Anda di sana, ganti ke "Enabled", lalu relaunch.');
-      return;
+    if (isBroadcasting || !window.isSecureContext) {
+        if (!window.isSecureContext) showToast('Mic requires Secure Context (HTTPS)', 'error');
+        return;
     }
-    
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        } 
-      });
-
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       socket.emit('start-mic');
-      
       socket.once('mic-ready', () => {
         isBroadcasting = true;
-        
-        // UI Feedback
-        micPulse.classList.replace('opacity-0', 'opacity-50');
-        micStatusText.textContent = "SEDANG SIARAN...";
-        micStatusText.classList.add('text-purple-600', 'animate-pulse');
-        micStatusIcon.classList.add('scale-110', 'bg-purple-100', 'dark:bg-purple-800');
-
-        mediaRecorder = new MediaRecorder(stream, {
-          mimeType: 'audio/webm;codecs=opus'
-        });
-
-        mediaRecorder.ondataavailable = async (e) => {
-          if (e.data.size > 0 && socket.connected) {
-            const buffer = await e.data.arrayBuffer();
-            socket.emit('audio-data', buffer);
-          }
-        };
-
-        // Send data every 100ms for low latency
+        micPulse.classList.replace('opacity-0', 'opacity-100');
+        micStatusText.innerText = 'ON AIR';
+        micStatusText.classList.replace('text-slate-500', 'text-rose-500');
+        micStatusIcon.classList.add('bg-rose-500/20', 'text-rose-500', 'border-rose-500/30');
+        micStatusIcon.classList.add('scale-110');
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+        mediaRecorder.ondataavailable = async (e) => { if (e.data.size > 0) socket.emit('audio-data', await e.data.arrayBuffer()); };
         mediaRecorder.start(100);
       });
-
-      socket.once('mic-error', (msg) => {
-        alert('Gagal: ' + msg);
-        stopBroadcasting();
-      });
-
     } catch (err) {
-      console.error('Mic Error:', err);
-      alert('Tidak dapat mengakses mikrofon. Pastikan Anda menggunakan HTTPS atau localhost.');
+        showToast('Microphone access denied', 'error');
     }
   }
 
   function stopBroadcasting() {
     if (!isBroadcasting) return;
-    
     isBroadcasting = false;
-    if (mediaRecorder) {
-      mediaRecorder.stop();
-      mediaRecorder.stream.getTracks().forEach(track => track.stop());
-    }
+    if (mediaRecorder) { mediaRecorder.stop(); mediaRecorder.stream.getTracks().forEach(t => t.stop()); }
     socket.emit('stop-mic');
-    
-    // UI Reset
-    micPulse.classList.replace('opacity-50', 'opacity-0');
-    micStatusText.textContent = "TAHAN UNTUK BICARA";
-    micStatusText.classList.remove('text-purple-600', 'animate-pulse');
-    micStatusIcon.classList.remove('scale-110', 'bg-purple-100', 'dark:bg-purple-800');
+    micPulse.classList.replace('opacity-100', 'opacity-0');
+    micStatusText.innerText = 'TAHAN UNTUK BICARA';
+    micStatusText.classList.replace('text-rose-500', 'text-slate-500');
+    micStatusIcon.classList.remove('bg-rose-500/20', 'text-rose-500', 'border-rose-500/30', 'scale-110');
   }
 
-  // Event Listeners for Push-to-Talk
   if (btnMic) {
     btnMic.addEventListener('mousedown', startBroadcasting);
     btnMic.addEventListener('mouseup', stopBroadcasting);
     btnMic.addEventListener('mouseleave', stopBroadcasting);
-    
-    // Support Touchevents for Mobile
-    btnMic.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      startBroadcasting();
-    });
-    btnMic.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      stopBroadcasting();
-    });
+    btnMic.addEventListener('touchstart', (e) => { e.preventDefault(); startBroadcasting(); });
+    btnMic.addEventListener('touchend', (e) => { e.preventDefault(); stopBroadcasting(); });
   }
-
-  function startPolling() {
-    updateAmpliStatus();
-    pollingInterval = setInterval(updateAmpliStatus, 2000);
-  }
-
-  // Update status amplifier
-  async function updateAmpliStatus() {
-    try {
-      const response = await fetch('/ampli/status');
-      const data = await response.json();
-      
-      const indicator = document.getElementById('relayStatusIndicator');
-      const statusText = document.getElementById('relayStatusText');
-      const btnOn = document.getElementById('btnAmpliOn');
-      const btnOff = document.getElementById('btnAmpliOff');
-      
-      const nowPlaying = document.getElementById('nowPlayingIndicator');
-      const activeName = document.getElementById('activeAudioName');
-
-      if (data.relay === 'ON') {
-        indicator.className = 'w-3 h-3 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]';
-        statusText.textContent = 'AKTIF';
-        statusText.className = 'text-emerald-400 font-bold tracking-wide text-sm';
-        btnOn.disabled = true;
-        btnOff.disabled = false;
-      } else {
-        indicator.className = 'w-3 h-3 rounded-full bg-slate-600';
-        statusText.textContent = 'NONAKTIF';
-        statusText.className = 'text-slate-500 font-bold tracking-wide text-sm';
-        btnOn.disabled = false;
-        btnOff.disabled = true;
-      }
-
-      // Tampilkan info manual override
-      if (data.manualOverride) {
-        statusText.textContent += ' (MANUAL)';
-      }
-
-      // Handle Now Playing Indicator
-      const playButtons = document.querySelectorAll('button[title="Putar Suara"]');
-      if (data.audio && data.audio.isPlaying) {
-        activeName.textContent = data.audio.activeFile || 'Tidak diketahui';
-        nowPlaying.classList.remove('translate-y-32', 'opacity-0');
-        nowPlaying.classList.add('translate-y-0', 'opacity-100');
-        
-        // Disable all play buttons
-        playButtons.forEach(btn => {
-          btn.disabled = true;
-          btn.classList.add('opacity-50', 'cursor-not-allowed');
-        });
-      } else {
-        nowPlaying.classList.add('translate-y-32', 'opacity-0');
-        nowPlaying.classList.remove('translate-y-0', 'opacity-100');
-        
-        // Enable all play buttons
-        playButtons.forEach(btn => {
-          btn.disabled = false;
-          btn.classList.remove('opacity-50', 'cursor-not-allowed');
-        });
-      }
-
-    } catch (error) {
-      console.error('Error fetching status:', error);
-    }
-  }
-
-  // Kontrol amplifier ON/OFF
-  async function controlAmpli(action) {
-    if (isProcessing) return;
-    
-    isProcessing = true;
-    const btnOn = document.getElementById('btnAmpliOn');
-    const btnOff = document.getElementById('btnAmpliOff');
-    
-    btnOn.disabled = true;
-    btnOff.disabled = true;
-
-    try {
-      const response = await fetch(`/ampli/${action}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const data = await response.json();
-      
-      if (data.success) {
-        // Tampilkan notifikasi
-        showNotification(`Amplifier ${action.toUpperCase()} berhasil!`, 'success');
-        // Update status langsung
-        setTimeout(updateAmpliStatus, 500);
-      } else {
-        showNotification('Gagal mengontrol amplifier', 'error');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      showNotification('Terjadi kesalahan', 'error');
-    } finally {
-      setTimeout(() => {
-        isProcessing = false;
-        updateAmpliStatus();
-      }, 1000);
-    }
-  }
-
-  // Helper: Tampilkan notifikasi
-  function showNotification(message, type) {
-    const container = document.createElement('div');
-    container.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
-      type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-    }`;
-    container.textContent = message;
-    document.body.appendChild(container);
-    
-    setTimeout(() => {
-      container.style.opacity = '0';
-      container.style.transition = 'opacity 0.3s';
-      setTimeout(() => container.remove(), 300);
-    }, 3000);
-  }
-
-  // Toggle import form
-  function toggleImportForm() {
-    const form = document.getElementById('importForm');
-    if (form) {
-      form.classList.toggle('hidden');
-    }
-  }
-  
-  // Confirm before delete
-  function confirmDelete() {
-    return confirm('Apakah Anda yakin ingin menghapus?');
-  }
-
-  // Toggle Edit Schedule (Reguler)
-  function toggleEditSchedule(day, index) {
-    const viewEl = document.getElementById(`sched-view-${day}-${index}`);
-    const editEl = document.getElementById(`sched-edit-${day}-${index}`);
-    if (viewEl && editEl) {
-      viewEl.classList.toggle('hidden');
-      editEl.classList.toggle('hidden');
-    }
-  }
-
-  // Toggle Edit Special Schedule
-  function toggleEditSpecial(index) {
-    const viewEl = document.getElementById(`special-view-${index}`);
-    const editEl = document.getElementById(`special-edit-${index}`);
-    if (viewEl && editEl) {
-      viewEl.classList.toggle('hidden');
-      editEl.classList.toggle('hidden');
-    }
-  }
-  
-  // Auto-hide success/error messages after 5 seconds
-  document.addEventListener('DOMContentLoaded', function() {
-    const messages = document.querySelectorAll('.bg-green-100, .bg-red-100, .bg-emerald-50, .bg-red-50');
-    messages.forEach(msg => {
-      setTimeout(() => {
-        msg.style.opacity = '0';
-        setTimeout(() => msg.remove(), 300);
-      }, 5000);
-    });
-    
-    // Start polling status amplifier
-    startPolling();
-  });
-  // Perbaikan Spacing Mobile (Now Playing padding)
-  function adjustMobileSpacing() {
-    const main = document.querySelector('main');
-    const indicator = document.getElementById('nowPlayingIndicator');
-    if (indicator && indicator.classList.contains('opacity-100')) {
-      main.classList.add('pb-40');
-      main.classList.remove('pb-12');
-    } else {
-      main.classList.remove('pb-40');
-      main.classList.add('pb-12');
-    }
-  }
-
-  // Monitor status untuk update spacing
-  setInterval(adjustMobileSpacing, 1000);
 </script>
-
-  <!-- Modal Quick Call -->
-  <div id="modalQuickCall" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-    <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-lg shadow-2xl border border-white/20 overflow-hidden transform transition-all animate-in zoom-in duration-300">
-      <div class="p-8 text-center bg-gradient-to-br from-primary-600 to-indigo-700 text-white relative">
-        <h3 class="text-2xl font-black mb-2 tracking-tight">Set Panggilan Ketua Kelas</h3>
-        <p class="text-primary-100 text-sm font-medium opacity-80">Pilih suara yang akan dijadikan tombol pintasan</p>
-        <button onclick="document.getElementById('modalQuickCall').classList.add('hidden')" class="absolute top-6 right-6 p-2 rounded-full hover:bg-white/10 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-      <div class="p-8 max-h-[60vh] overflow-y-auto custom-scrollbar">
-        <div class="space-y-3">
-          <% musicFiles.forEach(file => { %>
-            <% const isActive = (file === quickCallFile); %>
-            <form method="POST" action="/config/quick-call">
-              <input type="hidden" name="filename" value="<%= file %>">
-              <button type="submit" 
-                class="w-full p-4 rounded-2xl border transition-all group flex items-center justify-between
-                <%= isActive ? 'border-primary-500 bg-primary-50/50 dark:bg-primary-900/20 shadow-sm shadow-primary-500/10' : 'border-slate-100 dark:border-slate-800 hover:border-primary-500/50 dark:hover:border-primary-500/50 hover:bg-slate-50 dark:hover:bg-slate-800/50' %>">
-                <div class="flex flex-col items-start overflow-hidden">
-                  <span class="text-sm font-bold truncate pr-4 transition-colors
-                    <%= isActive ? 'text-primary-700 dark:text-primary-400' : 'text-slate-700 dark:text-slate-200 group-hover:text-primary-600 dark:group-hover:text-primary-400' %>">
-                    <%= file %>
-                  </span>
-                  <% if (isActive) { %>
-                    <span class="text-[9px] font-black uppercase tracking-widest text-primary-500 mt-0.5">Sedang Digunakan</span>
-                  <% } %>
-                </div>
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center transition-all shrink-0
-                  <%= isActive ? 'bg-primary-600 text-white' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 group-hover:bg-primary-100 dark:group-hover:bg-primary-800 group-hover:text-primary-600' %>">
-                  <% if (isActive) { %>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
-                      <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
-                    </svg>
-                  <% } else { %>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                    </svg>
-                  <% } %>
-                </div>
-              </button>
-            </form>
-          <% }) %>
-        </div>
-      </div>
-    </div>
-  </div>
 
 <%- include('partials/footer') %>

@@ -1,162 +1,337 @@
-<%- include('partials/header') %>
+<%- include('partials/header', { activePage: 'settings' }) %>
 
-<div class="max-w-4xl mx-auto mt-8 px-6 pb-20">
-  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
+<div class="max-w-[1400px] mx-auto pb-20">
+  <!-- Header Section -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-8 px-2">
     <div>
-      <h1 class="text-3xl font-black text-slate-800 dark:text-slate-100 transition-colors flex items-center gap-3">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 text-primary-600">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.894.15c.542.09.94.56.94 1.109v1.094c0 .55-.398 1.02-.94 1.11l-.894.149c-.424.07-.764.383-.929.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527a1.125 1.125 0 01-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.108-1.204l-.526-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894z" />
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-        Pengaturan Sistem
+      <h1 class="text-5xl font-black text-white tracking-tighter flex items-center gap-5">
+        <span class="w-2.5 h-12 bg-gradient-to-b from-slate-400 to-slate-800 rounded-full shadow-[0_0_20px_rgba(255,255,255,0.1)]"></span>
+        System Security
       </h1>
-      <p class="text-slate-500 dark:text-slate-400 mt-1 ml-11">Kelola keamanan dan akses pengguna.</p>
+      <p class="text-slate-500 mt-3 font-medium text-lg italic opacity-80 leading-relaxed">Kelola otentikasi administrator dan kontrol akses infrastruktur sistem.</p>
     </div>
-    <a href="/dashboard" class="w-full sm:w-auto bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 px-5 py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-700 shadow-sm text-sm">
-       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
-         <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-       </svg>
-       Kembali
-    </a>
   </div>
 
-  <% if (locals.msg) { %>
-    <div class="<%= type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800/50 dark:text-emerald-400' : 'bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-900/20 dark:border-rose-800/50 dark:text-rose-400' %> border p-4 rounded-2xl mb-8 shadow-sm flex items-center gap-3 animate-fade-in transition-all">
-      <div class="p-1.5 rounded-full <%= type === 'success' ? 'bg-emerald-500' : 'bg-rose-500' %> text-white">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
-          <% if (type === 'success') { %>
-            <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
-          <% } else { %>
-            <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
-          <% } %>
-        </svg>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+    <!-- Ganti Password Card -->
+    <div class="glass-premium p-12 lg:p-14 rounded-[4rem] border border-white/5 relative overflow-hidden group hover:border-primary-500/30 transition-all duration-500">
+      <div class="absolute -right-20 -top-20 w-80 h-80 bg-primary-600 rounded-full opacity-[0.03] blur-[100px] group-hover:opacity-[0.07] transition-opacity"></div>
+      
+      <div class="relative z-10">
+        <h2 class="text-3xl font-black text-white mb-4 flex items-center gap-5 tracking-tight">
+          <div class="p-4 bg-primary-500/10 text-primary-400 rounded-2xl shadow-inner">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-7 h-7">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 0 1 3 3m3 0a6 6 0 0 1-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+            </svg>
+          </div>
+          Update Keys
+        </h2>
+        <p class="text-slate-400 text-sm mb-12 font-medium italic pr-8 leading-relaxed">Perbarui kata sandi Anda secara berkala untuk menjaga integritas keamanan sistem bel.</p>
+        
+        <form action="/settings/password" method="POST" class="space-y-6">
+          <div class="space-y-2">
+            <label class="block text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 px-2 italic">Current Passkey</label>
+            <input type="password" name="currentPassword" required class="w-full px-6 py-5 bg-black/40 border-0 rounded-3xl focus:ring-2 focus:ring-primary-500/30 text-white font-black transition-all" placeholder="Enter current password" />
+          </div>
+          <div class="space-y-2">
+            <label class="block text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 px-2 italic">New Passkey</label>
+            <input type="password" name="newPassword" required class="w-full px-6 py-5 bg-black/40 border-0 rounded-3xl focus:ring-2 focus:ring-primary-500/30 text-white font-black transition-all" placeholder="Minimum 8 characters" />
+          </div>
+          <div class="space-y-2">
+            <label class="block text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 px-2 italic">Confirm Key</label>
+            <input type="password" name="confirmPassword" required class="w-full px-6 py-5 bg-black/40 border-0 rounded-3xl focus:ring-2 focus:ring-primary-500/30 text-white font-black transition-all" placeholder="Repeat new password" />
+          </div>
+          
+          <button type="submit" class="w-full bg-primary-600 hover:bg-primary-500 text-white py-6 rounded-3xl font-black text-xs uppercase tracking-[0.3em] transition-all shadow-2xl shadow-primary-600/20 active:scale-95 mt-6">
+            REFRESH PASSKEY
+          </button>
+        </form>
       </div>
-      <span class="font-bold text-sm tracking-tight"><%= msg %></span>
     </div>
+
+    <% if (user.role === 'root') { %>
+    <!-- Tambah User Card -->
+    <div class="glass-premium p-12 lg:p-14 rounded-[4rem] border border-white/5 relative overflow-hidden group hover:border-accent/30 transition-all duration-500">
+      <div class="absolute -right-20 -bottom-20 w-80 h-80 bg-accent rounded-full opacity-[0.03] blur-[100px] group-hover:opacity-[0.07] transition-opacity"></div>
+      
+      <div class="relative z-10">
+        <h2 class="text-3xl font-black text-white mb-4 flex items-center gap-5 tracking-tight">
+          <div class="p-4 bg-accent/10 text-accent rounded-2xl shadow-inner">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-7 h-7">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7.5v9m-4.5-4.5h9M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+            </svg>
+          </div>
+          Provision User
+        </h2>
+        <p class="text-slate-400 text-sm mb-12 font-medium italic pr-8 leading-relaxed">User baru akan diberikan level akses spesifik (Root atau Admin) untuk kontrol sistem.</p>
+        
+        <form action="/settings/user/add" method="POST" class="space-y-6">
+          <div class="space-y-2">
+            <label class="block text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 px-2 italic">Provision Username</label>
+            <input type="text" name="newUsername" required class="w-full px-6 py-5 bg-black/40 border-0 rounded-3xl focus:ring-2 focus:ring-accent/30 text-white font-black transition-all" placeholder="admin_smamsa" />
+          </div>
+          <div class="space-y-2">
+            <label class="block text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 px-2 italic">Provision Passkey</label>
+            <input type="password" name="newUserPassword" required class="w-full px-6 py-5 bg-black/40 border-0 rounded-3xl focus:ring-2 focus:ring-accent/30 text-white font-black transition-all" placeholder="••••••••" />
+          </div>
+          
+          <div class="space-y-2">
+            <label class="block text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 px-2 italic">Security Level (Role)</label>
+            <select name="newRole" class="w-full px-6 py-5 bg-black/40 border-0 rounded-3xl focus:ring-2 focus:ring-accent/30 text-white font-black transition-all appearance-none cursor-pointer">
+                <option value="admin">ADMIN (Operational Access)</option>
+                <option value="root">ROOT (Full System Access)</option>
+            </select>
+          </div>
+          
+          <button type="submit" class="w-full bg-accent/20 hover:bg-accent text-accent hover:text-white border border-accent/30 py-6 rounded-3xl font-black text-xs uppercase tracking-[0.3em] transition-all active:scale-95 mt-4">
+            INITIATE PROVISION
+          </button>
+        </form>
+      </div>
+    </div>
+    <% } %>
+  </div>
+
+  <!-- CUSTOM BRANDING SECTION (Root Only) -->
+  <% if (user.role === 'root') { %>
+  <div class="mt-16 glass-premium rounded-[4rem] border border-white/5 relative group overflow-hidden">
+    <div class="absolute -right-32 -top-32 w-96 h-96 bg-primary-500 rounded-full opacity-[0.03] blur-[120px] group-hover:opacity-[0.08] transition-opacity duration-1000"></div>
+    
+    <div class="p-12 lg:p-16 relative z-10">
+      <h2 class="text-3xl font-black text-white mb-12 flex items-center gap-5 tracking-tight">
+        <div class="p-4 bg-primary-500/10 text-primary-400 rounded-3xl shadow-inner">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-8 h-8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1 1.622-3.395m3.42 3.42a15.995 15.995 0 0 0 4.764-4.648l3.876-5.814a1.151 1.151 0 0 0-1.597-1.597L14.146 6.32a15.996 15.996 0 0 0-4.649 4.763m3.42 3.42a6.776 6.776 0 0 0-3.42-3.42" />
+          </svg>
+        </div>
+        Custom Branding & Identity
+      </h2>
+
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-16">
+        <!-- Text Config Form -->
+        <form action="/settings/branding/update" method="POST" class="space-y-8">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-2">
+              <label class="block text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 px-2 italic">Application Name</label>
+              <input type="text" name="appName" value="<%= branding.appName %>" class="w-full px-6 py-4 bg-black/40 border-0 rounded-2xl text-white font-black text-xs" />
+            </div>
+            <div class="space-y-2">
+              <label class="block text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 px-2 italic">Application Subtitle</label>
+              <input type="text" name="appSub" value="<%= branding.appSub %>" class="w-full px-6 py-4 bg-black/40 border-0 rounded-2xl text-white font-black text-xs" />
+            </div>
+          </div>
+
+
+          <div class="space-y-2">
+            <label class="block text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 px-2 italic">Browser Page Title</label>
+            <input type="text" name="pageTitle" value="<%= branding.pageTitle %>" class="w-full px-6 py-4 bg-black/40 border-0 rounded-2xl text-white font-black text-xs" />
+          </div>
+
+          <div class="space-y-4">
+            <label class="block text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 px-2 italic">System Atmosphere (Themes)</label>
+            <div class="grid grid-cols-5 gap-4">
+              <% 
+                const themes = [
+                  { id: 'midnight', color: '#1e3a8a', label: 'Midnight' },
+                  { id: 'emerald', color: '#065f46', label: 'Emerald' },
+                  { id: 'amethyst', color: '#6b21a8', label: 'Amethyst' },
+                  { id: 'crimson', color: '#9f1239', label: 'Crimson' },
+                  { id: 'amber', color: '#92400e', label: 'Amber' },
+                  { id: 'slated', color: '#334155', label: 'Slated' },
+                  { id: 'teal', color: '#115e59', label: 'Teal' },
+                  { id: 'indigo', color: '#3730a3', label: 'Indigo' },
+                  { id: 'graphite', color: '#1e293b', label: 'Graphite' },
+                  { id: 'aurora', color: '#0369a1', label: 'Aurora' }
+                ];
+                themes.forEach(t => { 
+              %>
+                <button type="button" 
+                        onclick="previewTheme('<%= t.id %>')"
+                        class="group relative flex flex-col items-center gap-2">
+                  <div class="w-12 h-12 rounded-full border-2 transition-all duration-300 <%= branding.theme === t.id ? 'border-white scale-110 shadow-[0_0_20px_rgba(255,255,255,0.2)]' : 'border-transparent opacity-60 hover:opacity-100 hover:scale-110' %>"
+                       style="background-color: <%= t.color %>;"
+                       id="theme-swatch-<%= t.id %>">
+                    <% if (branding.theme === t.id) { %>
+                      <div class="absolute inset-0 flex items-center justify-center text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+                          <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
+                        </svg>
+                      </div>
+                    <% } %>
+                  </div>
+                  <span class="text-[8px] font-bold text-slate-500 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity"><%= t.label %></span>
+                </button>
+              <% }) %>
+            </div>
+            <input type="hidden" name="theme" id="selectedTheme" value="<%= branding.theme || 'midnight' %>">
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-2">
+              <label class="block text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 px-2 italic">Login Welcome Text</label>
+              <input type="text" name="loginWelcome" value="<%= branding.loginWelcome %>" class="w-full px-6 py-4 bg-black/40 border-0 rounded-2xl text-white font-black text-xs" />
+            </div>
+            <div class="space-y-2">
+              <label class="block text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 px-2 italic">Login Subtitle</label>
+              <input type="text" name="loginSubtitle" value="<%= branding.loginSubtitle %>" class="w-full px-6 py-4 bg-black/40 border-0 rounded-2xl text-white font-black text-xs" />
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label class="block text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 px-2 italic">Footer Credit/Copyright</label>
+            <input type="text" name="footerCredit" value="<%= branding.footerCredit %>" class="w-full px-6 py-4 bg-black/40 border-0 rounded-2xl text-white font-black text-xs" />
+          </div>
+
+          <div class="flex gap-4">
+            <button type="submit" class="flex-[3] bg-primary-600 hover:bg-primary-500 text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] transition-all">SAVE BRANDING CONFIG</button>
+            <button type="submit" form="resetBrandingForm" class="flex-1 bg-white/5 hover:bg-red-500/10 text-slate-500 hover:text-red-500 border border-white/10 hover:border-red-500/30 py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] transition-all" onclick="return confirm('⚠️ RESET BRANDING:\nAre you sure you want to revert all branding to system defaults?')">RESET</button>
+          </div>
+        </form>
+
+        <form id="resetBrandingForm" action="/settings/branding/reset" method="POST" class="hidden"></form>
+
+        <!-- Asset Upload Form -->
+        <div class="xl:border-l xl:border-white/5 xl:pl-16 space-y-12">
+          <form action="/settings/branding/upload" method="POST" enctype="multipart/form-data" class="space-y-8">
+            <div class="space-y-6">
+              <div class="space-y-4">
+                <label class="block text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 px-2 italic">Dashboard & Sidebar Logo</label>
+                <div class="flex items-center gap-6">
+                  <div class="w-20 h-20 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 overflow-hidden">
+                    <% if (branding.logoUrl) { %>
+                      <img src="<%= branding.logoUrl %>" class="w-full h-full object-cover">
+                    <% } else { %>
+                      <div class="text-white/20">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-8 h-8">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                        </svg>
+                      </div>
+                    <% } %>
+                  </div>
+                  <div class="flex-1 space-y-3">
+                    <div class="relative group/upload">
+                      <input type="file" name="logo" id="logoInput" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                      <div class="px-6 py-4 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-between group-hover/upload:bg-white/10 group-hover/upload:border-primary-500/50 transition-all duration-300">
+                        <span id="logoFileName" class="text-[10px] font-black text-slate-500 uppercase tracking-widest truncate max-w-[150px]">No file chosen</span>
+                        <div class="px-4 py-2 bg-primary-600/20 text-primary-400 rounded-xl text-[9px] font-black uppercase tracking-widest border border-primary-500/30 group-hover/upload:bg-primary-600 group-hover/upload:text-white transition-all">Select Logo</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="space-y-4">
+                <label class="block text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 px-2 italic">Browser Favicon</label>
+                <div class="flex items-center gap-6">
+                  <div class="w-20 h-20 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 overflow-hidden">
+                    <% if (branding.faviconUrl) { %>
+                      <img src="<%= branding.faviconUrl %>" class="w-full h-full object-contain">
+                    <% } else { %>
+                      <div class="text-white/20">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-8 h-8">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-.778.099-1.533.284-2.253m0 0A17.919 17.919 0 0112 7.5a17.919 17.919 0 018.716 2.247" />
+                        </svg>
+                      </div>
+                    <% } %>
+                  </div>
+                  <div class="flex-1 space-y-3">
+                    <div class="relative group/upload">
+                      <input type="file" name="favicon" id="faviconInput" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                      <div class="px-6 py-4 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-between group-hover/upload:bg-white/10 group-hover/upload:border-primary-500/50 transition-all duration-300">
+                        <span id="faviconFileName" class="text-[10px] font-black text-slate-500 uppercase tracking-widest truncate max-w-[150px]">No file chosen</span>
+                        <div class="px-4 py-2 bg-primary-600/20 text-primary-400 rounded-xl text-[9px] font-black uppercase tracking-widest border border-primary-500/30 group-hover/upload:bg-primary-600 group-hover/upload:text-white transition-all">Select Icon</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" class="w-full bg-white/5 hover:bg-white/10 text-white border border-white/10 py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] transition-all">UPLOAD ASSETS</button>
+            <p class="text-[9px] text-slate-600 italic text-center uppercase tracking-widest mt-4">Supported formats: PNG, JPG, SVG, ICO</p>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
   <% } %>
 
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-    <!-- Ganti Password -->
-    <div class="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none transition-all flex flex-col h-full relative overflow-hidden">
-      <div class="absolute -right-10 -top-10 w-32 h-32 bg-primary-500 rounded-full opacity-5 blur-2xl"></div>
-      
-      <div class="relative z-10 flex flex-col h-full">
-        <h2 class="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2 flex items-center gap-2 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-primary-500">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+  <!-- User Management Table Section -->
+  <div class="mt-16 glass-premium rounded-[4rem] border border-white/5 relative group overflow-hidden">
+    <div class="absolute -left-32 -bottom-32 w-96 h-96 bg-emerald-500 rounded-full opacity-[0.03] blur-[120px] group-hover:opacity-[0.08] transition-opacity duration-1000"></div>
+    
+    <div class="p-12 lg:p-16 relative z-10">
+      <h2 class="text-3xl font-black text-white mb-12 flex items-center gap-5 tracking-tight">
+        <div class="p-4 bg-emerald-500/10 text-emerald-400 rounded-3xl shadow-inner">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-8 h-8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-3.833-6.242 4.147 4.147 0 00-1.851.439A5.004 5.004 0 0113 12.75c-.852 0-1.63-.213-2.31-.588A5.995 5.995 0 007 12.58a5.996 5.996 0 00-2.31 4.57 4.125 4.125 0 003.833 6.242 9.337 9.337 0 004.121.952c.94 0 1.833-.14 2.625-.372" />
           </svg>
-          Ubah Kata Sandi
-        </h2>
-        <p class="text-slate-400 dark:text-slate-500 text-xs mb-8 transition-colors">Setelah diubah, Anda perlu login ulang pada sesi berikutnya.</p>
-        
-        <form action="/settings/password" method="POST" class="space-y-6 mt-auto">
-          <div class="space-y-1.5">
-            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 px-1 transition-colors">Sandi Saat Ini</label>
-            <input type="password" name="currentPassword" required class="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all font-semibold text-slate-700 dark:text-slate-300" />
-          </div>
-          <div class="space-y-1.5">
-            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 px-1 transition-colors">Sandi Baru</label>
-            <input type="password" name="newPassword" required class="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all font-semibold text-slate-700 dark:text-slate-300" />
-          </div>
-          <div class="space-y-1.5">
-            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 px-1 transition-colors">Konfirmasi Sandi Baru</label>
-            <input type="password" name="confirmPassword" required class="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all font-semibold text-slate-700 dark:text-slate-300" />
-          </div>
-          
-          <button type="submit" class="w-full bg-slate-900 dark:bg-primary-600 border-b-4 border-slate-950 dark:border-primary-700 hover:bg-primary-600 dark:hover:bg-primary-500 hover:border-primary-700 dark:hover:border-primary-600 text-white py-4 rounded-2x font-black text-sm uppercase tracking-widest transition-all active:scale-[0.98] active:border-b-0 rounded-2xl">
-            Simpan Perubahan
-          </button>
-        </form>
-      </div>
-    </div>
-
-    <!-- Tambah User -->
-    <div class="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none transition-all flex flex-col h-full relative overflow-hidden">
-      <div class="absolute -right-10 -top-10 w-32 h-32 bg-accent rounded-full opacity-5 blur-2xl"></div>
-      
-      <div class="relative z-10 flex flex-col h-full">
-        <h2 class="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2 flex items-center gap-2 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-accent">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7.5v9m-4.5-4.5h9M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-          </svg>
-          Daftarkan User Baru
-        </h2>
-        <p class="text-slate-400 dark:text-slate-500 text-xs mb-8 transition-colors">User baru akan memiliki hak akses penuh sebagai Administrator.</p>
-        
-        <form action="/settings/user/add" method="POST" class="space-y-6 mt-auto">
-          <div class="space-y-1.5">
-            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 px-1 transition-colors">Username Baru</label>
-            <input type="text" name="newUsername" required class="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all font-semibold text-slate-700 dark:text-slate-300" placeholder="Contoh: admin_staf" />
-          </div>
-          <div class="space-y-1.5">
-            <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 px-1 transition-colors">Sandi User Baru</label>
-            <input type="password" name="newUserPassword" required class="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all font-semibold text-slate-700 dark:text-slate-300" />
-          </div>
-          
-          <div class="flex-1"></div>
-          
-          <button type="submit" class="w-full bg-slate-900 dark:bg-slate-800 border-b-4 border-slate-950 dark:border-slate-950 hover:bg-slate-800 dark:hover:bg-slate-700 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all active:scale-[0.98] active:border-b-0 mt-8">
-            Daftarkan User
-          </button>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- Daftar Administrator (BAru) -->
-  <div class="mt-8">
-    <div class="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none transition-all relative overflow-hidden">
-      <div class="absolute -left-10 -bottom-10 w-32 h-32 bg-emerald-500 rounded-full opacity-5 blur-2xl"></div>
-      
-      <h2 class="text-xl font-bold text-slate-800 dark:text-slate-100 mb-6 flex items-center gap-2 transition-colors">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-emerald-500">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-3.833-6.242 4.147 4.147 0 00-1.851.439A5.004 5.004 0 0113 12.75c-.852 0-1.63-.213-2.31-.588A5.995 5.995 0 007 12.58a5.996 5.996 0 00-2.31 4.57 4.125 4.125 0 003.833 6.242 9.337 9.337 0 004.121.952c.94 0 1.833-.14 2.625-.372" />
-        </svg>
-        Daftar Administrator Aktif
+        </div>
+        Identity Register
       </h2>
       
-      <div class="overflow-x-auto">
+      <div class="overflow-x-auto custom-scrollbar">
         <table class="w-full text-left border-collapse">
           <thead>
-            <tr class="border-b border-slate-50 dark:border-slate-800/50">
-              <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Username</th>
-              <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Role</th>
-              <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 text-right">Aksi</th>
+            <tr class="border-b border-white/5">
+              <th class="px-8 py-6 text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 pb-8">Avatar</th>
+              <th class="px-8 py-6 text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 pb-8">Principal Identification</th>
+              <th class="px-8 py-6 text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 pb-8">Access Level</th>
+              <th class="px-8 py-6 text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 pb-8 text-right">Operations</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-50 dark:divide-slate-800/50">
+          <tbody class="divide-y divide-white/5">
             <% allUsers.forEach(u => { %>
-              <tr class="group hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all">
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 dark:text-slate-500 group-hover:bg-primary-500 group-hover:text-white transition-all shadow-sm font-bold text-xs">
-                      <%= u.username.charAt(0).toUpperCase() %>
-                    </div>
-                    <div>
-                        <div class="text-sm font-bold text-slate-700 dark:text-slate-200 transition-colors">
-                          <%= u.username %>
-                          <% if (u.username === user.username) { %>
-                             <span class="ml-2 px-2 py-0.5 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 text-[9px] font-black uppercase tracking-tight">Anda</span>
-                          <% } %>
-                        </div>
+              <tr class="group hover:bg-white/[0.02] transition-all duration-300">
+                <td class="px-8 py-8">
+                  <div class="relative w-14 h-14">
+                    <div class="absolute inset-0 bg-gradient-to-br from-primary-500 to-accent rounded-2xl opacity-10 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <div class="absolute inset-0.5 bg-[#0a0f1d] rounded-[1.1rem] flex items-center justify-center font-black text-white group-hover:bg-transparent transition-colors duration-500">
+                        <%= u.username.charAt(0).toUpperCase() %>
                     </div>
                   </div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest">Administrator</span>
+                <td class="px-8 py-8 whitespace-nowrap">
+                    <div>
+                        <div class="text-lg font-black text-white group-hover:text-primary-400 transition-colors">
+                          <%= u.username %>
+                          <% if (u.username === user.username) { %>
+                             <span class="ml-4 px-3 py-1 bg-primary-500/20 text-primary-400 text-[9px] font-black uppercase tracking-widest border border-primary-500/30 rounded-lg animate-pulse">Your Session</span>
+                          <% } %>
+                        </div>
+                        <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1.5 opacity-50 italic">Verified Identity</p>
+                    </div>
                 </td>
-                <td class="px-6 py-4 text-right whitespace-nowrap">
-                  <% if (u.username !== user.username) { %>
-                    <form action="/settings/user/delete" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus user ini? Akun tidak dapat dipulihkan.')">
+                <td class="px-8 py-8 whitespace-nowrap">
+                    <% if (u.role === 'root') { %>
+                        <div class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                            <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                            <span class="text-[9px] font-black text-emerald-400 uppercase tracking-widest">ROOT_ACCESS</span>
+                        </div>
+                    <% } else { %>
+                        <div class="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                            <div class="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                            <span class="text-[9px] font-black text-blue-400 uppercase tracking-widest">ADMIN_ACCESS</span>
+                        </div>
+                    <% } %>
+                </td>
+                <td class="px-8 py-8 text-right whitespace-nowrap">
+                  <% if (u.username !== user.username && user.role === 'root') { %>
+                    <form action="/settings/user/delete" method="POST" class="inline" onsubmit="return confirm('⚠️ REVOKE ACCESS:\nAre you sure you want to permanently delete this administrator?')">
                       <input type="hidden" name="usernameToDelete" value="<%= u.username %>">
-                      <button type="submit" class="p-2 text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 transition-colors" title="Hapus User">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                      <button type="submit" class="p-4 bg-red-500/10 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all duration-300 active:scale-90" title="Revoke User Access">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
                         </svg>
                       </button>
                     </form>
                   <% } else { %>
-                    <span class="text-[10px] text-slate-300 dark:text-slate-600 font-bold uppercase tracking-tight italic">Sesi Aktif</span>
+                    <div class="flex items-center justify-end gap-3 text-slate-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 00 2.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 00 2.25 2.25z" />
+                        </svg>
+                        <span class="text-[10px] font-black uppercase tracking-widest italic opacity-60"><%= (user.role !== 'root') ? 'No Permissions' : 'Protected' %></span>
+                    </div>
                   <% } %>
                 </td>
               </tr>
@@ -167,9 +342,176 @@
     </div>
   </div>
   
-  <div class="mt-12 text-center">
-    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 dark:text-slate-700 transition-colors">School Bell System • Security Module v1.1</p>
-  </div>
 </div>
+
+<!-- ASSET CROPPER MODAL (Enhanced Glassmorphism) -->
+<div id="cropperModal" class="fixed inset-0 z-[200] hidden">
+    <div class="absolute inset-0 bg-black/80 backdrop-blur-xl"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-6 md:p-12">
+        <div class="w-full max-w-4xl bg-[#0a101f] rounded-[3.5rem] border border-white/10 shadow-[0_50px_100px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[90vh]">
+            <!-- Modal Header -->
+            <div class="px-10 py-8 border-b border-white/5 flex items-center justify-between">
+                <div>
+                    <h3 class="text-2xl font-black text-white tracking-tight">Personalize Identity Asset</h3>
+                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] mt-2 italic">Format & Precision Adjustment</p>
+                </div>
+                <button onclick="closeCropper()" class="p-4 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-2xl transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Modal Body (Cropper Area) -->
+            <div class="flex-1 overflow-hidden relative bg-black/40 flex items-center justify-center min-h-[400px]">
+                <img id="cropperImage" class="max-w-full max-h-full opacity-0">
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-10 py-8 bg-white/[0.02] border-t border-white/5 flex items-center justify-between gap-6">
+                <button onclick="closeCropper()" class="px-10 py-5 bg-white/5 hover:bg-white/10 text-slate-400 font-black text-[10px] uppercase tracking-[0.3em] rounded-2xl transition-all">Cancel</button>
+                <button onclick="finalizeCrop()" class="px-12 py-5 bg-primary-600 hover:bg-primary-500 text-white font-black text-[10px] uppercase tracking-[0.3em] rounded-2xl shadow-[0_20px_40px_rgba(var(--primary-rgb),0.3)] transition-all active:scale-95">Synchronize Asset</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let cropper = null;
+let currentField = ''; // 'logo' or 'favicon'
+
+// Intercept file input for cropping & UI updates
+document.querySelectorAll('input[type="file"]').forEach(input => {
+    if (input.name === 'logo' || input.name === 'favicon') {
+        input.addEventListener('change', function(e) {
+            const fileNameDisplay = document.getElementById(this.name + 'FileName');
+            if (this.files && this.files[0]) {
+                const file = this.files[0];
+                if (fileNameDisplay) fileNameDisplay.innerText = file.name;
+
+                currentField = this.name;
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    openCropper(event.target.result);
+                };
+                reader.readAsDataURL(file);
+                // We keep the value here because we might need to reset later if cancelled
+                // but finalizeCrop will handle the upload
+            }
+        });
+    }
+});
+
+function openCropper(imageSrc) {
+    const modal = document.getElementById('cropperModal');
+    const image = document.getElementById('cropperImage');
+    
+    modal.classList.remove('hidden');
+    image.src = imageSrc;
+    image.style.opacity = '1';
+
+    if (cropper) cropper.destroy();
+    
+    cropper = new Cropper(image, {
+        aspectRatio: 1, // Enforce Square
+        viewMode: 2,
+        dragMode: 'move',
+        guides: true,
+        highlight: false,
+        cropBoxMovable: true,
+        cropBoxResizable: true,
+        toggleDragModeOnDblclick: false,
+        background: false
+    });
+}
+
+function closeCropper() {
+    document.getElementById('cropperModal').classList.add('hidden');
+    if (cropper) {
+        cropper.destroy();
+        cropper = null;
+    }
+}
+
+async function finalizeCrop() {
+    if (!cropper) return;
+    
+    const canvas = cropper.getCroppedCanvas({
+        width: 1024,
+        height: 1024,
+        imageSmoothingEnabled: true,
+        imageSmoothingQuality: 'high',
+    });
+
+    canvas.toBlob(async (blob) => {
+        const formData = new FormData();
+        formData.append(currentField, blob, `${currentField}.jpg`);
+
+        try {
+            // Show loading state on button
+            const btn = document.querySelector('button[onclick="finalizeCrop()"]');
+            const originalText = btn.innerText;
+            btn.innerText = 'SYNCHRONIZING...';
+            btn.disabled = true;
+
+            const response = await fetch('/settings/branding/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else {
+                window.location.reload();
+            }
+        } catch (err) {
+            console.error('Cropping upload error:', err);
+            alert('Failed to synchronize asset. Please try again.');
+        }
+    }, 'image/jpeg', 0.9);
+}
+
+function previewTheme(themeId) {
+    const config = themes[themeId];
+    if (!config) return;
+
+    // Update Hidden Input
+    document.getElementById('selectedTheme').value = themeId;
+
+    // Update CSS Variables Instantly for Preview
+    document.documentElement.style.setProperty('--primary', config.p);
+    document.documentElement.style.setProperty('--accent', config.a);
+    document.documentElement.style.setProperty('--primary-glow', config.g);
+    
+    // Update RGB Components for Alpha-blending
+    const hexToRgb = (hex) => {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return `${r}, ${g}, ${b}`;
+    };
+    document.documentElement.style.setProperty('--primary-rgb', hexToRgb(config.p));
+    document.documentElement.style.setProperty('--accent-rgb', hexToRgb(config.a));
+
+    // Update Swatch UI
+    document.querySelectorAll('[id^="theme-swatch-"]').forEach(swatch => {
+        const id = swatch.id.replace('theme-swatch-', '');
+        swatch.className = "w-12 h-12 rounded-full border-2 transition-all duration-300 " + 
+                         (id === themeId ? 'border-white scale-110 shadow-[0_0_20px_rgba(255,255,255,0.2)]' : 'border-transparent opacity-60 hover:opacity-100 hover:scale-110');
+        
+        // Update checkmark
+        if (id === themeId) {
+            swatch.innerHTML = '<div class="absolute inset-0 flex items-center justify-center text-white"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" /></svg></div>';
+        } else {
+            swatch.innerHTML = '';
+        }
+    });
+
+    // Notify user of preview mode
+    if (typeof showToast === 'function') {
+        showToast('Atmosphere Preview: ' + themeId + ' applied', 'success');
+    }
+}
+</script>
 
 <%- include('partials/footer') %>

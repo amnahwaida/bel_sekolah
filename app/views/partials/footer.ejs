@@ -1,30 +1,135 @@
-  </main>
-  
+    </main>
+    
+    <!-- GLOBAL BRANDED FOOTER -->
+    <footer class="mt-auto py-12 px-8 flex flex-col items-center gap-6 opacity-30 hover:opacity-100 transition-opacity duration-700">
+      <div class="h-px w-24 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+      <div class="flex flex-col items-center gap-3">
+        <p class="text-[10px] font-black text-slate-500 uppercase tracking-[0.5em] text-center leading-relaxed">
+          <%- branding.footerCredit || '© 2024 SMAMSA' %>
+        </p>
+      </div>
+    </footer>
+  </div> <!-- Close Main Content Wrapper -->
+
+  <!-- GLOBAL NOTIFICATION SYSTEM -->
+  <div id="globalToast" class="fixed top-8 right-8 z-[200] flex flex-col gap-4 pointer-events-none"></div>
+
+  <!-- NOW PLAYING FLOATING INDICATOR (GLASSMorphism 2.0) -->
+  <div id="nowPlayingIndicator" class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] hidden transform translate-y-32 opacity-0 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)]">
+    <div class="glass-premium px-10 py-6 rounded-[3rem] flex items-center gap-8 shadow-[0_30px_100px_rgba(0,0,0,0.6)] border-t border-white/20 group relative overflow-hidden">
+      <!-- Glow Effect -->
+      <div class="absolute -inset-10 bg-emerald-500/10 blur-[50px] animate-pulse"></div>
+      
+      <div class="relative flex items-center gap-8 z-10">
+        <div class="relative">
+          <div class="w-16 h-16 bg-gradient-to-br from-emerald-400 to-teal-600 rounded-full flex items-center justify-center animate-pulse-slow shadow-[0_0_40px_rgba(16,185,129,0.6)]">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8 text-white">
+              <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 001.5 12c0 .898.121 1.768.35 2.595.341 1.24 1.518 1.905 2.659 1.905h1.93l4.5 4.5c.945.945 2.561.276 2.561-1.06V4.06zM18.584 5.106a.75.75 0 011.06 0c3.808 3.807 3.808 9.98 0 13.788a.75.75 0 11-1.06-1.06 8.25 8.25 0 000-11.668.75.75 0 010-1.06z" />
+            </svg>
+          </div>
+          <div class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full border-4 border-[#0a0f1d] animate-ping"></div>
+        </div>
+        
+        <div class="min-w-[180px] max-w-[320px]">
+          <div class="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-400 mb-2 italic">Broadcasting Live</div>
+          <div id="activeAudioName" class="text-white font-black text-lg truncate leading-tight tracking-tight">System Audio Stream</div>
+          <div class="flex items-center gap-2 mt-2 opacity-50">
+            <div class="w-1.5 h-1.5 bg-white/40 rounded-full"></div>
+            <span class="text-[9px] font-black uppercase tracking-widest text-white">STB Output Active</span>
+          </div>
+        </div>
+
+        <form method="POST" action="/stop" class="ml-4">
+          <button type="submit" class="bg-white text-black hover:bg-red-500 hover:text-white px-8 py-4 rounded-3xl font-black text-[11px] uppercase tracking-[0.2em] transition-all duration-500 shadow-2xl active:scale-90 group-hover:px-10">
+            Kill Stream
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // Toggle import form
-    function toggleImportForm() {
-      const form = document.getElementById('importForm');
-      if (form) {
-        form.classList.toggle('hidden');
-      }
+    // Global Status Polling
+    async function updateGlobalStatus() {
+      try {
+        const res = await fetch('/status');
+        if (!res.ok) return;
+        const data = await res.json();
+        
+        const indicator = document.getElementById('nowPlayingIndicator');
+        const nameEl = document.getElementById('activeAudioName');
+        
+        if (data.playing && data.file) {
+          nameEl.innerText = data.file;
+          indicator.classList.remove('hidden');
+          requestAnimationFrame(() => {
+            indicator.classList.remove('translate-y-32', 'opacity-0');
+            indicator.classList.add('translate-y-0', 'opacity-100');
+          });
+        } else {
+          indicator.classList.add('translate-y-32', 'opacity-0');
+          setTimeout(() => indicator.classList.add('hidden'), 700);
+        }
+      } catch (e) {}
     }
-    
-    // Confirm before delete
-    function confirmDelete(action) {
-      return confirm('Apakah Anda yakin ingin menghapus?');
+    setInterval(updateGlobalStatus, 2000);
+
+    // Toast Notification System
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('globalToast');
+      const toast = document.createElement('div');
+      const colorClass = type === 'success' ? 'from-emerald-500 to-teal-600' : 'from-rose-500 to-pink-600';
+      
+      toast.className = `glass-premium p-1 rounded-2xl animate-in pointer-events-auto`;
+      toast.innerHTML = `
+        <div class="flex items-center gap-4 px-6 py-4 bg-gradient-to-br ${colorClass} rounded-xl shadow-2xl">
+          <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-white">
+            ${type === 'success' ? 
+              `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9.75-9.75" /></svg>` : 
+              `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>`
+            }
+          </div>
+          <span class="font-bold text-sm tracking-tight">${message}</span>
+        </div>
+      `;
+      
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(50px)';
+        toast.style.transition = 'all 0.5s ease';
+        setTimeout(() => toast.remove(), 500);
+      }, 5000);
     }
-    
-    // Auto-hide success/error messages after 5 seconds
-    document.addEventListener('DOMContentLoaded', function() {
-      const messages = document.querySelectorAll('.animate-fade-in');
-      messages.forEach(msg => {
-        setTimeout(() => {
-          msg.style.opacity = '0';
-          msg.style.transition = 'opacity 0.3s';
-          setTimeout(() => msg.remove(), 300);
-        }, 5000);
-      });
+
+    // Auto-detect messages from URL
+    window.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('rename') === 'success') showToast('File renamed successfully');
+      if (params.get('rename') === 'error') showToast('Failed to rename file', 'error');
+      if (params.get('msg')) showToast(params.get('msg'), params.get('type') === 'success' ? 'success' : 'error');
     });
   </script>
+
+  <style>
+    /* Premium Visual Tokens */
+    ::selection { background: rgba(59, 130, 246, 0.5); color: white; }
+    
+    .glass-premium {
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .animate-in {
+      animation: springIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    
+    @keyframes springIn {
+      from { opacity: 0; transform: translateY(20px) scale(0.95); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+  </style>
 </body>
 </html>

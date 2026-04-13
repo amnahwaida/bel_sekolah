@@ -13,10 +13,7 @@ services:
     environment:
       - TZ=Asia/Jakarta
       - SESSION_SECRET=${SESSION_SECRET}
-    devices:
-#      - /dev/hidraw1:/dev/hidraw1  # 🔑 USB Relay device (BARU!)
-      - /dev/snd:/dev/snd          # ✅ wajib
-#    user: "1000:1000"              # ✅ sesuaikan dengan UID/GID user vannyezha
+    privileged: true            # Akses dinamis ke /dev/hidraw* & /dev/snd (hot-plug safe)
     networks:
       - belmuhi
 
