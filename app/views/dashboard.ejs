@@ -143,7 +143,7 @@
       <h2 class="text-xs font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 transition-colors">Aksi Cepat (Panggilan)</h2>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
       <!-- Card Panggilan Ketua Kelas -->
       <div class="relative group">
         <div class="absolute -inset-0.5 bg-gradient-to-r from-primary-600 to-indigo-600 rounded-[2rem] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
@@ -259,7 +259,7 @@
                     <span class="text-sm font-bold text-slate-700 dark:text-slate-200 leading-tight transition-colors"><%= s.time %></span>
                     <span class="text-[10px] text-slate-400 dark:text-slate-500 truncate max-w-full transition-colors" title="<%= s.sound %>"><%= s.sound %></span>
                   </div>
-                  <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                  <div class="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
                     <button type="button" onclick="toggleEditSchedule('<%= day.key %>', <%= i %>)" class="bg-blue-50 dark:bg-blue-900/20 text-blue-500 dark:text-blue-400 hover:bg-blue-500 dark:hover:bg-blue-500 hover:text-white w-7 h-7 rounded-lg flex items-center justify-center transition-all" title="Edit">
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
                         <path d="M5.433 13.917l1.262-3.155A4 4 0 017.58 9.42l6.92-6.918a2.121 2.121 0 013 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 01-.65-.65z" />
@@ -347,7 +347,7 @@
                 <div class="text-[10px] text-slate-400 dark:text-slate-500 truncate max-w-full transition-colors" title="<%= s.sound %>"><%= s.sound %></div>
               </div>
             </div>
-            <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+            <div class="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
               <button type="button" onclick="toggleEditSpecial(<%= i %>)" class="bg-blue-50 dark:bg-blue-900/20 text-blue-500 dark:text-blue-400 hover:bg-blue-500 hover:text-white w-8 h-8 rounded-xl flex items-center justify-center transition-all" title="Edit">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
                   <path d="M5.433 13.917l1.262-3.155A4 4 0 017.58 9.42l6.92-6.918a2.121 2.121 0 013 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 01-.65-.65z" />
@@ -467,7 +467,7 @@
                 <div class="w-10 h-10 flex-shrink-0 bg-white dark:bg-slate-700 rounded-xl flex items-center justify-center text-slate-400 dark:text-slate-500 group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-all shadow-sm font-bold text-[10px] uppercase">
                   <%= f.split('.').pop() %>
                 </div>
-                <div class="min-w-0 flex-1">
+                <div class="min-w-0 flex-1 overflow-hidden">
                   <div class="text-sm font-bold text-slate-700 dark:text-slate-200 truncate transition-colors" title="<%= f %>"><%= f %></div>
                   <div class="text-[10px] text-slate-400 dark:text-slate-500 font-medium transition-colors uppercase tracking-widest">Audio File</div>
                 </div>
@@ -489,7 +489,7 @@
                 </form>
                 <form method="POST" action="/rename" class="flex items-center gap-1 group/rename">
                   <input type="hidden" name="oldname" value="<%= f %>" />
-                  <input type="text" name="newname" value="<%= f %>" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[10px] px-2 py-1.5 rounded-lg w-24 focus:w-40 transition-all outline-none focus:border-blue-400 dark:focus:border-blue-500 text-slate-700 dark:text-slate-300" maxlength="50" onfocus="this.select()" />
+                  <input type="text" name="newname" value="<%= f %>" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[10px] px-2 py-1.5 rounded-lg w-24 sm:focus:w-40 transition-all outline-none focus:border-blue-400 dark:focus:border-blue-500 text-slate-700 dark:text-slate-300" maxlength="50" onfocus="this.select()" />
                   <button type="submit" class="text-slate-300 dark:text-slate-600 hover:text-blue-500 dark:hover:text-blue-400 transition-colors" title="Ubah Nama">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
                       <path d="M5.433 13.917l1.262-3.155A4 4 0 017.58 9.42l6.92-6.918a2.121 2.121 0 013 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 01-.65-.65z" />
@@ -832,6 +832,21 @@
     // Start polling status amplifier
     startPolling();
   });
+  // Perbaikan Spacing Mobile (Now Playing padding)
+  function adjustMobileSpacing() {
+    const main = document.querySelector('main');
+    const indicator = document.getElementById('nowPlayingIndicator');
+    if (indicator && indicator.classList.contains('opacity-100')) {
+      main.classList.add('pb-40');
+      main.classList.remove('pb-12');
+    } else {
+      main.classList.remove('pb-40');
+      main.classList.add('pb-12');
+    }
+  }
+
+  // Monitor status untuk update spacing
+  setInterval(adjustMobileSpacing, 1000);
 </script>
 
   <!-- Modal Quick Call -->
