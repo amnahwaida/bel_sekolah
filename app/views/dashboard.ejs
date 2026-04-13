@@ -184,34 +184,45 @@
   const ampliToggleText = document.getElementById('ampliToggleText');
   let currentAmpliState = 'off';
   
-  socket.on('ampli-state', (data) => {
-    currentAmpliState = data.status;
-    if (data.status === 'on') {
-      indicator.className = 'w-4 h-4 rounded-full bg-primary-400 shadow-[0_0_20px_rgba(var(--primary-rgb),0.5)] ring-4 ring-primary-400/20';
-      ring.style.borderColor = 'var(--primary)';
-      ring.style.boxShadow = 'inset 0 0 30px rgba(var(--primary-rgb),0.1), 0 0 30px rgba(var(--primary-rgb),0.1)';
-      text.innerText = 'Power Active';
-      text.className = 'text-primary-400 font-black tracking-[0.2em] text-[11px] uppercase';
+  async function updateAmpliStatus() {
+    try {
+      const response = await fetch('/ampli/status');
+      const data = await response.json();
+      currentAmpliState = data.relay === 'ON' ? 'on' : 'off';
       
-      if (btnAmpliToggle) {
-        btnAmpliToggle.className = 'w-full h-[88px] bg-primary-500 hover:bg-primary-600 text-white rounded-[2.5rem] font-black text-[11px] uppercase tracking-[0.3em] transition-all shadow-xl shadow-primary-500/30 flex items-center justify-center gap-4 active:scale-95 group border-2 border-transparent';
-        ampliToggleStatusDot.className = 'w-2 h-2 bg-white rounded-full animate-pulse';
-        ampliToggleText.innerText = 'AKTIF';
+      if (currentAmpliState === 'on') {
+        indicator.className = 'w-4 h-4 rounded-full bg-primary-400 shadow-[0_0_20px_rgba(var(--primary-rgb),0.5)] ring-4 ring-primary-400/20';
+        ring.style.borderColor = 'var(--primary)';
+        ring.style.boxShadow = 'inset 0 0 30px rgba(var(--primary-rgb),0.1), 0 0 30px rgba(var(--primary-rgb),0.1)';
+        text.innerText = 'Power Active';
+        text.className = 'text-primary-400 font-black tracking-[0.2em] text-[11px] uppercase';
+        
+        if (btnAmpliToggle) {
+          btnAmpliToggle.className = 'w-full h-[88px] bg-primary-500 hover:bg-primary-600 text-white rounded-[2.5rem] font-black text-[11px] uppercase tracking-[0.3em] transition-all shadow-xl shadow-primary-500/30 flex items-center justify-center gap-4 active:scale-95 group border-2 border-transparent';
+          ampliToggleStatusDot.className = 'w-2 h-2 bg-white rounded-full animate-pulse';
+          ampliToggleText.innerText = 'AKTIF';
+        }
+      } else {
+        indicator.className = 'w-4 h-4 rounded-full bg-slate-600 ring-4 ring-white/5';
+        ring.style.borderColor = '#1e293b';
+        ring.style.boxShadow = 'none';
+        text.innerText = 'Standby Mode';
+        text.className = 'text-slate-500 font-black tracking-[0.2em] text-[11px] uppercase';
+        
+        if (btnAmpliToggle) {
+          btnAmpliToggle.className = 'w-full h-[88px] bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-[2.5rem] font-black text-[11px] uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-4 active:scale-95 border border-white/10';
+          ampliToggleStatusDot.className = 'w-2 h-2 bg-slate-600 rounded-full';
+          ampliToggleText.innerText = 'NONAKTIF';
+        }
       }
-    } else {
-      indicator.className = 'w-4 h-4 rounded-full bg-slate-600 ring-4 ring-white/5';
-      ring.style.borderColor = '#1e293b';
-      ring.style.boxShadow = 'none';
-      text.innerText = 'Standby Mode';
-      text.className = 'text-slate-500 font-black tracking-[0.2em] text-[11px] uppercase';
-      
-      if (btnAmpliToggle) {
-        btnAmpliToggle.className = 'w-full h-[88px] bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-[2.5rem] font-black text-[11px] uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-4 active:scale-95 border border-white/10';
-        ampliToggleStatusDot.className = 'w-2 h-2 bg-slate-600 rounded-full';
-        ampliToggleText.innerText = 'NONAKTIF';
-      }
+    } catch (err) {
+      console.error(err);
     }
-  });
+  }
+
+  // Start checking ampli status every 2s
+  updateAmpliStatus();
+  setInterval(updateAmpliStatus, 2000);
 
   function toggleAmpliBtn() {
     if (isProcessing) return;
@@ -223,7 +234,12 @@
     fetch(`/ampli/${cmd}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
-    }).finally(() => setTimeout(() => isProcessing = false, 500));
+    }).finally(() => {
+      setTimeout(() => {
+        isProcessing = false;
+        updateAmpliStatus();
+      }, 500);
+    });
   }
 
   // Mic Logic (Push to Talk)
