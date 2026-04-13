@@ -253,19 +253,46 @@
             <ul class="space-y-2 mb-4 flex-1">
               <% const list = schedules[day.key] || []; %>
               <% list.forEach((s, i) => { %>
-                <li class="group flex justify-between items-center bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700 hover:border-<%= day.color %>-200 dark:hover:border-<%= day.color %>-500/30 hover:shadow-sm transition-all">
+                <!-- View Mode -->
+                <li id="sched-view-<%= day.key %>-<%= i %>" class="group flex justify-between items-center bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700 hover:border-<%= day.color %>-200 dark:hover:border-<%= day.color %>-500/30 hover:shadow-sm transition-all">
                   <div class="flex flex-col min-w-0 flex-1">
                     <span class="text-sm font-bold text-slate-700 dark:text-slate-200 leading-tight transition-colors"><%= s.time %></span>
                     <span class="text-[10px] text-slate-400 dark:text-slate-500 truncate max-w-full transition-colors" title="<%= s.sound %>"><%= s.sound %></span>
                   </div>
-                  <form method="POST" action="/schedule/remove" class="inline opacity-0 group-hover:opacity-100 transition-opacity" onsubmit="return confirmDelete()">
-                    <input type="hidden" name="day" value="<%= day.key %>" />
-                    <input type="hidden" name="index" value="<%= i %>" />
-                    <button type="submit" class="bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 hover:bg-red-500 dark:hover:bg-red-500 hover:text-white w-7 h-7 rounded-lg flex items-center justify-center transition-all" title="Hapus">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
-                        <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                  <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <button type="button" onclick="toggleEditSchedule('<%= day.key %>', <%= i %>)" class="bg-blue-50 dark:bg-blue-900/20 text-blue-500 dark:text-blue-400 hover:bg-blue-500 dark:hover:bg-blue-500 hover:text-white w-7 h-7 rounded-lg flex items-center justify-center transition-all" title="Edit">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
+                        <path d="M5.433 13.917l1.262-3.155A4 4 0 017.58 9.42l6.92-6.918a2.121 2.121 0 013 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 01-.65-.65z" />
                       </svg>
                     </button>
+                    <form method="POST" action="/schedule/remove" class="inline" onsubmit="return confirmDelete()">
+                      <input type="hidden" name="day" value="<%= day.key %>" />
+                      <input type="hidden" name="index" value="<%= i %>" />
+                      <button type="submit" class="bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 hover:bg-red-500 dark:hover:bg-red-500 hover:text-white w-7 h-7 rounded-lg flex items-center justify-center transition-all" title="Hapus">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
+                          <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                        </svg>
+                      </button>
+                    </form>
+                  </div>
+                </li>
+                <!-- Edit Mode (hidden by default) -->
+                <li id="sched-edit-<%= day.key %>-<%= i %>" class="hidden">
+                  <form method="POST" action="/schedule/edit" class="bg-<%= day.color %>-50/50 dark:bg-<%= day.color %>-900/10 p-3 rounded-xl border border-<%= day.color %>-200 dark:border-<%= day.color %>-700/50 space-y-2">
+                    <input type="hidden" name="day" value="<%= day.key %>" />
+                    <input type="hidden" name="index" value="<%= i %>" />
+                    <div class="flex gap-2">
+                      <input type="time" name="time" value="<%= s.time %>" class="px-2 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded-lg flex-1 outline-none focus:border-<%= day.color %>-400 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300" required />
+                      <select name="sound" class="px-2 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded-lg flex-1 min-w-0 outline-none focus:border-<%= day.color %>-400 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 truncate" required>
+                        <% musicFiles.forEach(f => { %>
+                          <option value="<%= f %>" <%= f === s.sound ? 'selected' : '' %>><%= f %></option>
+                        <% }) %>
+                      </select>
+                    </div>
+                    <div class="flex gap-2">
+                      <button type="submit" class="flex-1 bg-<%= day.color %>-600 hover:bg-<%= day.color %>-700 text-white py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all">Simpan</button>
+                      <button type="button" onclick="toggleEditSchedule('<%= day.key %>', <%= i %>)" class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">Batal</button>
+                    </div>
                   </form>
                 </li>
               <% }) %>
@@ -306,26 +333,62 @@
         Jadwal Khusus
       </h2>
       
-      <ul class="space-y-3 mb-8 max-h-[400px] overflow-y-auto custom-scrollbar pr-2 transition-all">
+      <ul class="space-y-3 mb-8 pr-2 transition-all">
         <% special.forEach((s, i) => { %>
-          <li class="flex items-center justify-between bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-all group">
-            <div class="flex items-center gap-3">
-              <div class="bg-white dark:bg-slate-700 p-2 rounded-xl text-center shadow-sm min-w-[60px] transition-colors">
+          <!-- View Mode -->
+          <li id="special-view-<%= i %>" class="flex items-center justify-between bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-all group">
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+              <div class="bg-white dark:bg-slate-700 p-2 rounded-xl text-center shadow-sm min-w-[60px] shrink-0 transition-colors">
                 <div class="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold tracking-tighter transition-colors"><%= s.date.split('-')[0] %></div>
                 <div class="text-sm font-bold text-indigo-600 dark:text-indigo-400 transition-colors"><%= s.date.split('-')[1] %>-<%= s.date.split('-')[2] %></div>
               </div>
               <div class="min-w-0 flex-1">
                 <div class="text-sm font-bold text-slate-700 dark:text-slate-200 transition-colors"><%= s.time %></div>
-                <div class="text-[10px] text-slate-400 dark:text-slate-500 truncate max-w-full transition-colors"><%= s.sound %></div>
+                <div class="text-[10px] text-slate-400 dark:text-slate-500 truncate max-w-full transition-colors" title="<%= s.sound %>"><%= s.sound %></div>
               </div>
             </div>
-            <form method="POST" action="/special/remove" class="inline opacity-0 group-hover:opacity-100 transition-opacity" onsubmit="return confirmDelete()">
-              <input type="hidden" name="index" value="<%= i %>" />
-              <button class="bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 hover:bg-red-500 dark:hover:bg-red-500 hover:text-white w-8 h-8 rounded-xl flex items-center justify-center transition-all" title="Hapus">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
-                  <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+            <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+              <button type="button" onclick="toggleEditSpecial(<%= i %>)" class="bg-blue-50 dark:bg-blue-900/20 text-blue-500 dark:text-blue-400 hover:bg-blue-500 hover:text-white w-8 h-8 rounded-xl flex items-center justify-center transition-all" title="Edit">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+                  <path d="M5.433 13.917l1.262-3.155A4 4 0 017.58 9.42l6.92-6.918a2.121 2.121 0 013 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 01-.65-.65z" />
                 </svg>
               </button>
+              <form method="POST" action="/special/remove" class="inline" onsubmit="return confirmDelete()">
+                <input type="hidden" name="index" value="<%= i %>" />
+                <button class="bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 hover:bg-red-500 hover:text-white w-8 h-8 rounded-xl flex items-center justify-center transition-all" title="Hapus">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4">
+                    <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                  </svg>
+                </button>
+              </form>
+            </div>
+          </li>
+          <!-- Edit Mode (hidden by default) -->
+          <li id="special-edit-<%= i %>" class="hidden">
+            <form method="POST" action="/special/edit" class="bg-indigo-50/50 dark:bg-indigo-900/10 p-4 rounded-2xl border border-indigo-200 dark:border-indigo-700/50 space-y-3">
+              <input type="hidden" name="index" value="<%= i %>" />
+              <div class="grid grid-cols-2 gap-3">
+                <div class="flex flex-col gap-1">
+                  <label class="text-[10px] text-slate-400 font-bold uppercase px-1">Tanggal</label>
+                  <input type="date" name="date" value="<%= s.date %>" class="px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-xl w-full outline-none focus:border-indigo-400 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 relative z-10" required />
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label class="text-[10px] text-slate-400 font-bold uppercase px-1">Jam</label>
+                  <input type="time" name="time" value="<%= s.time %>" class="px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-xl w-full outline-none focus:border-indigo-400 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 relative z-10" required />
+                </div>
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-[10px] text-slate-400 font-bold uppercase px-1">Pilih Suara</label>
+                <select name="sound" class="px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-xl w-full outline-none focus:border-indigo-400 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 truncate" required>
+                  <% musicFiles.forEach(f => { %>
+                    <option value="<%= f %>" <%= f === s.sound ? 'selected' : '' %>><%= f %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="flex gap-2">
+                <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl transition-all shadow-lg shadow-indigo-600/20">Simpan</button>
+                <button type="button" onclick="toggleEditSpecial(<%= i %>)" class="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">Batal</button>
+              </div>
             </form>
           </li>
         <% }) %>
@@ -336,17 +399,17 @@
         <% } %>
       </ul>
 
-      <div class="bg-indigo-50/50 dark:bg-indigo-900/10 p-6 rounded-2xl border border-indigo-100 dark:border-indigo-900/40 transition-colors">
+      <div class="bg-indigo-50/50 dark:bg-indigo-900/10 p-6 rounded-2xl border border-indigo-100 dark:border-indigo-900/40 transition-colors relative z-20">
         <h4 class="text-xs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-widest mb-4 transition-colors">Tambah Jadwal Baru</h4>
         <form method="POST" action="/special/add" class="space-y-3">
           <div class="grid grid-cols-2 gap-3">
             <div class="flex flex-col gap-1">
               <label class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase px-1 transition-colors">Tanggal</label>
-              <input type="date" name="date" class="px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-xl w-full outline-none focus:border-indigo-400 dark:focus:border-indigo-500 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 transition-all" required />
+              <input type="date" name="date" class="px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-xl w-full outline-none focus:border-indigo-400 dark:focus:border-indigo-500 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 transition-all relative z-10" required />
             </div>
             <div class="flex flex-col gap-1">
               <label class="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase px-1 transition-colors">Jam</label>
-              <input type="time" name="time" class="px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-xl w-full outline-none focus:border-indigo-400 dark:focus:border-indigo-500 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 transition-all" required />
+              <input type="time" name="time" class="px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-xl w-full outline-none focus:border-indigo-400 dark:focus:border-indigo-500 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 transition-all relative z-10" required />
             </div>
           </div>
           <div class="flex flex-col gap-1">
@@ -734,6 +797,26 @@
   // Confirm before delete
   function confirmDelete() {
     return confirm('Apakah Anda yakin ingin menghapus?');
+  }
+
+  // Toggle Edit Schedule (Reguler)
+  function toggleEditSchedule(day, index) {
+    const viewEl = document.getElementById(`sched-view-${day}-${index}`);
+    const editEl = document.getElementById(`sched-edit-${day}-${index}`);
+    if (viewEl && editEl) {
+      viewEl.classList.toggle('hidden');
+      editEl.classList.toggle('hidden');
+    }
+  }
+
+  // Toggle Edit Special Schedule
+  function toggleEditSpecial(index) {
+    const viewEl = document.getElementById(`special-view-${index}`);
+    const editEl = document.getElementById(`special-edit-${index}`);
+    if (viewEl && editEl) {
+      viewEl.classList.toggle('hidden');
+      editEl.classList.toggle('hidden');
+    }
   }
   
   // Auto-hide success/error messages after 5 seconds

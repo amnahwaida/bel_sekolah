@@ -498,6 +498,46 @@ app.post('/special/remove', requireAuth, async (req, res) => {
   }
 });
 
+// === EDIT JADWAL REGULER ===
+app.post('/schedule/edit', requireAuth, async (req, res) => {
+  const { day, index, time, sound } = req.body;
+  const validDays = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+  if (!validDays.includes(day)) return res.status(400).send('Hari tidak valid');
+  if (!time || !sound) return res.status(400).send('Waktu & suara diperlukan');
+  try {
+    let schedules = JSON.parse(await fs.readFile(SCHEDULES_FILE, 'utf8'));
+    schedules = ensureSchedules(schedules);
+    const idx = parseInt(index);
+    if (idx < 0 || idx >= schedules[day].length) return res.status(400).send('Index tidak valid');
+    schedules[day][idx] = { time, sound };
+    schedules[day].sort((a, b) => a.time.localeCompare(b.time));
+    await fs.writeFile(SCHEDULES_FILE, JSON.stringify(schedules, null, 2));
+    addLog('config', `Jadwal ${day} #${idx} diubah: ${time} → ${sound}`, req.session.user.username);
+    res.redirect('/dashboard');
+  } catch (err) {
+    console.error('Edit schedule error:', err);
+    res.status(500).send('Gagal edit jadwal');
+  }
+});
+
+// === EDIT JADWAL KHUSUS ===
+app.post('/special/edit', requireAuth, async (req, res) => {
+  const { index, date, time, sound } = req.body;
+  if (!date || !time || !sound) return res.status(400).send('Data tidak lengkap');
+  try {
+    const special = JSON.parse(await fs.readFile(SPECIAL_SCHEDULES_FILE, 'utf8'));
+    const idx = parseInt(index);
+    if (idx < 0 || idx >= special.length) return res.status(400).send('Index tidak valid');
+    special[idx] = { date, time, sound };
+    await fs.writeFile(SPECIAL_SCHEDULES_FILE, JSON.stringify(special, null, 2));
+    addLog('config', `Jadwal khusus #${idx} diubah: ${date} ${time} → ${sound}`, req.session.user.username);
+    res.redirect('/dashboard');
+  } catch (err) {
+    console.error('Edit special error:', err);
+    res.status(500).send('Gagal edit jadwal khusus');
+  }
+});
+
 // 🔊 Upload musik — pakai uploadAudio
 app.post('/upload', requireAuth, uploadAudio.single('audiofile'), (req, res) => {
   res.redirect('/dashboard');
