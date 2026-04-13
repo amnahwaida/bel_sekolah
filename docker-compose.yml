@@ -10,11 +10,11 @@ services:
       - ./app:/app/app
       - ./data:/app/data
       - ./music:/app/music
-      - /dev/bus/usb:/dev/bus/usb
+      - /dev:/dev
     environment:
       - TZ=Asia/Jakarta
       - SESSION_SECRET=${SESSION_SECRET}
-    privileged: true            # Akses dinamis ke USB (kombinasi dengan /dev/bus/usb volume)
+    privileged: true            # Akses penuh USB dinamis melalui mapping /dev
     networks:
       - belmuhi
 
