@@ -10,10 +10,11 @@ services:
       - ./app:/app/app
       - ./data:/app/data
       - ./music:/app/music
+      - /dev/bus/usb:/dev/bus/usb
     environment:
       - TZ=Asia/Jakarta
       - SESSION_SECRET=${SESSION_SECRET}
-    privileged: true            # Akses dinamis ke /dev/hidraw* & /dev/snd (hot-plug safe)
+    privileged: true            # Akses dinamis ke USB (kombinasi dengan /dev/bus/usb volume)
     networks:
       - belmuhi
 
