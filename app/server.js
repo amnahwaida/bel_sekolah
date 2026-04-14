@@ -52,7 +52,7 @@ const writeRelay = async (cmd, retries = 3) => {
       return true; // Berhasil
     } catch (error) {
       if (i === retries - 1) throw error; // Jika percobaan terakhir gagal
-      console.warn(`⚠️ EPROTO/Write fail... retry \${i+1}/\${retries}`);
+      console.warn(`⚠️ EPROTO/Write fail... retry ${i+1}/${retries}`);
       await new Promise(r => setTimeout(r, 500)); // tunggu sebelum retry
     }
   }
