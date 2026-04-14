@@ -147,6 +147,40 @@
               <div>
                 <h3 class="font-black text-white text-4xl tracking-tighter mb-4 leading-none italic">Siaran Mikrofon</h3>
                 <p id="micStatusText" class="text-sm font-black text-slate-500 uppercase tracking-[0.4em] italic leading-none">Push to Talk / Tahan Bicara</p>
+                
+                <!-- HTTP Warning Block -->
+                <div id="micInsecureWarning" class="hidden mt-6 p-6 bg-amber-500/10 border border-amber-500/20 rounded-3xl max-w-lg">
+                  <div class="flex items-start gap-4">
+                    <div class="p-2 bg-amber-500/20 rounded-xl text-amber-500">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                        <path fill-rule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd" />
+                      </svg>
+                    </div>
+                    <div class="flex-1 space-y-3">
+                      <p class="text-xs font-black text-amber-500 uppercase tracking-widest leading-relaxed">Peringatan Keamanan Browser</p>
+                      <p class="text-[11px] text-slate-400 font-medium leading-relaxed italic">Mikrofon diblokir karena Anda mengakses lewat HTTP (Lokal). Ikuti langkah ini untuk mengaktifkan:</p>
+                      
+                      <div class="space-y-4 pt-2">
+                        <div class="space-y-2">
+                           <span class="text-[9px] text-slate-500 uppercase font-black tracking-widest">1. Buka Flags Chrome</span>
+                           <div class="flex items-center gap-2">
+                              <code class="flex-1 px-3 py-2 bg-black/40 rounded-xl text-[10px] text-white font-mono truncate">chrome://flags/#unsafely-treat-insecure-origin-as-secure</code>
+                           </div>
+                        </div>
+                        
+                        <div class="space-y-2">
+                           <span class="text-[9px] text-slate-500 uppercase font-black tracking-widest">2. Masukkan URL ini & Pilih Enabled</span>
+                           <div class="flex items-center gap-2">
+                              <code id="currentOriginText" class="flex-1 px-3 py-2 bg-black/40 rounded-xl text-[10px] text-primary-400 font-mono truncate">---</code>
+                              <button onclick="copyOrigin()" class="px-3 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] font-black text-white uppercase tracking-widest border border-white/5 transition-all active:scale-95">Salin</button>
+                           </div>
+                        </div>
+
+                        <p class="text-[9px] text-slate-600 italic">Setelah itu, klik tombol <b>Relaunch</b> di pojok kanan bawah Chrome.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
   
@@ -333,6 +367,33 @@
     btnMic.addEventListener('touchstart', (e) => { e.preventDefault(); startBroadcasting(); });
     btnMic.addEventListener('touchend', (e) => { e.preventDefault(); stopBroadcasting(); });
   }
+
+  // Detect insecure origin (HTTP + not localhost) and show Chrome Flag guide
+  function checkMicSecurity() {
+    // localhost and 127.0.0.1 are considered secure by browsers
+    const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    const isSecure = location.protocol === 'https:';
+    const warningBox = document.getElementById('micInsecureWarning');
+    const originText = document.getElementById('currentOriginText');
+
+    if (!isSecure && !isLocalhost) {
+      if (warningBox) warningBox.classList.remove('hidden');
+      if (originText) originText.innerText = location.origin;
+    }
+  }
+
+  function copyOrigin() {
+    const text = location.origin;
+    navigator.clipboard.writeText(text).then(() => {
+      if (typeof showToast === 'function') showToast('URL disalin! Tempel di Chrome Flags.', 'success');
+      else alert('URL disalin! Tempel di Chrome Flags.');
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    checkMicSecurity();
+  });
+
   // === ANTI-SPAM: Quick Call ===
   function handleQuickCallSubmit(form) {
     const btn = form.querySelector('#btnQuickCall');
