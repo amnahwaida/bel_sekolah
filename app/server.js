@@ -99,6 +99,31 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// DYNAMIC PWA ICON ROUTE
+app.get('/pwa-icon.svg', async (req, res) => {
+  try {
+    const branding = JSON.parse(await fs.readFile(BRANDING_FILE, 'utf8'));
+    const themeMap = {
+      midnight: '#1e3a8a', emerald: '#065f46', amethyst: '#6b21a8', crimson: '#9f1239',
+      amber: '#92400e', slated: '#334155', teal: '#115e59', indigo: '#3730a3',
+      graphite: '#1e293b', aurora: '#0369a1'
+    };
+    const primaryColor = themeMap[branding.theme] || '#1e3a8a';
+    
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+        <rect width="512" height="512" rx="120" fill="${primaryColor}"/>
+        <text x="50%" y="54%" font-family="Arial, sans-serif" font-weight="900" font-size="200" fill="white" text-anchor="middle" dominant-baseline="middle">BEL</text>
+      </svg>
+    `.trim();
+
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.send(svg);
+  } catch (err) {
+    res.status(500).send('Error generating icon');
+  }
+});
+
 // Middleware untuk menyuplai data user dan branding ke semua view
 app.use(async (req, res, next) => {
   res.locals.user = req.session.user || null;
