@@ -24,16 +24,28 @@
       e.preventDefault();
       // Stash the event so it can be triggered later.
       deferredPrompt = e;
-      // Show the install button in the sidebar
+      // Show or emphasize the install button
       const installContainer = document.getElementById('pwaInstallContainer');
-      if (installContainer) installContainer.classList.remove('hidden');
+      if (installContainer) {
+          installContainer.classList.remove('opacity-50');
+          const btnText = document.getElementById('pwaInstallText');
+          if (btnText) btnText.innerText = 'Install App';
+      }
     });
 
     window.addEventListener('DOMContentLoaded', () => {
         const btnInstall = document.getElementById('btnPWAInstall');
         if (btnInstall) {
             btnInstall.addEventListener('click', async () => {
-                if (!deferredPrompt) return;
+                if (!deferredPrompt) {
+                   // Jika sudah terinstal atau browser tidak mendukung prompt manual
+                   if (window.matchMedia('(display-mode: standalone)').matches) {
+                       showToast('Aplikasi sudah terinstal & versi terbaru', 'success');
+                   } else {
+                       showToast('Cek menu browser untuk install atau aplikasi sudah terpasang', 'info');
+                   }
+                   return;
+                }
                 // Show the prompt
                 deferredPrompt.prompt();
                 // Wait for the user to respond to the prompt
@@ -41,17 +53,17 @@
                 console.log(`User response to the install prompt: ${outcome}`);
                 // We've used the prompt, and can't use it again, throw it away
                 deferredPrompt = null;
-                // Hide the install button
-                const installContainer = document.getElementById('pwaInstallContainer');
-                if (installContainer) installContainer.classList.add('hidden');
+                // Update button state instead of hiding
+                const btnText = document.getElementById('pwaInstallText');
+                if (btnText) btnText.innerText = 'Sudah Terpasang';
             });
         }
     });
 
     window.addEventListener('appinstalled', (event) => {
       console.log('App was installed.');
-      const installContainer = document.getElementById('pwaInstallContainer');
-      if (installContainer) installContainer.classList.add('hidden');
+      const btnText = document.getElementById('pwaInstallText');
+      if (btnText) btnText.innerText = 'Sudah Terpasang';
     });
   </script>
 <% if (branding.faviconUrl) { %>
@@ -314,12 +326,12 @@
       </a>
 
       <!-- PWA Install Button -->
-      <div id="pwaInstallContainer" class="hidden pt-6">
+      <div id="pwaInstallContainer" class="pt-6">
         <button id="btnPWAInstall" class="nav-item flex items-center gap-4 w-full px-4 py-4 rounded-2xl bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white border border-emerald-500/20 transition-all group">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="nav-icon w-5 h-5 group-hover:bounce transition-all">
             <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
           </svg>
-          <span class="nav-text font-black text-xs uppercase tracking-widest">Install App</span>
+          <span id="pwaInstallText" class="nav-text font-black text-xs uppercase tracking-widest">Update / Install</span>
         </button>
       </div>
     </nav>
