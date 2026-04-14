@@ -39,9 +39,9 @@
           </div>
         </div>
 
-        <form method="POST" action="/stop" class="ml-4">
-          <button type="submit" class="bg-white text-black hover:bg-red-500 hover:text-white px-8 py-4 rounded-3xl font-black text-[11px] uppercase tracking-[0.2em] transition-all duration-500 shadow-2xl active:scale-90 group-hover:px-10">
-            Kill Stream
+        <form method="POST" action="/stop" class="ml-4" onsubmit="return handleKillStream(this)">
+          <button type="submit" id="btnKillStream" class="bg-white text-black hover:bg-red-500 hover:text-white px-8 py-4 rounded-3xl font-black text-[11px] uppercase tracking-[0.2em] transition-all duration-500 shadow-2xl active:scale-90 group-hover:px-10">
+            <span id="killStreamText">Kill Stream</span>
           </button>
         </form>
       </div>
@@ -49,6 +49,24 @@
   </div>
 
   <script>
+    // Anti-spam: Kill Stream button
+    function handleKillStream(form) {
+      const btn = form.querySelector('#btnKillStream');
+      const text = form.querySelector('#killStreamText');
+      if (btn.disabled) return false;
+      btn.disabled = true;
+      btn.classList.add('opacity-50');
+      btn.style.pointerEvents = 'none';
+      if (text) text.innerText = '⏳ STOPPING...';
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.classList.remove('opacity-50');
+        btn.style.pointerEvents = 'auto';
+        if (text) text.innerText = 'Kill Stream';
+      }, 3000);
+      return true;
+    }
+
     // Global Status Polling
     async function updateGlobalStatus() {
       try {

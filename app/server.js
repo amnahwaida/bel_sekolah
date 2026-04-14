@@ -39,6 +39,20 @@ let relayBusy = false;        // lock agar tidak ada dua perintah relay bersamaa
 let relayDebounceTimer = null; // debounce timer
 const RELAY_DEBOUNCE_MS = 1000; // minimum jeda antar perintah relay (ms)
 
+// Anti-spam mutex untuk /play, /stop, /schedule/toggle
+let playBusy = false;          // mutex untuk mencegah spam klik play
+let stopBusy = false;          // mutex untuk mencegah spam klik stop
+let toggleBusy = false;        // mutex untuk mencegah spam toggle schedule
+const PLAY_COOLDOWN_MS = 3000; // cooldown play (termasuk relay warmup)
+const STOP_COOLDOWN_MS = 2000; // cooldown stop
+const TOGGLE_COOLDOWN_MS = 1500; // cooldown toggle schedule
+
+// Rate limiter untuk login (anti brute-force)
+const loginAttempts = new Map(); // Map<IP, { count, lastAttempt }>
+const LOGIN_MAX_ATTEMPTS = 5;   // max percobaan
+const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 menit window
+const LOGIN_LOCKOUT_MS = 5 * 60 * 1000; // lockout 5 menit setelah max attempts
+
 // Relay write dengan auto-retry untuk menghindari hardware EPROTO fail di STB
 const writeRelay = async (cmd, retries = 3) => {
   for (let i = 0; i < retries; i++) {
@@ -390,11 +404,35 @@ const doRelayOff = async () => {
 app.get('/login', (req, res) => res.render('login', { error: null }));
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
+  const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+  
+  // Rate limiting: cek apakah IP ini sedang di-lockout
+  const attempts = loginAttempts.get(clientIP);
+  if (attempts) {
+    const timeSinceFirst = Date.now() - attempts.firstAttempt;
+    
+    // Jika sudah melewati window, reset counter
+    if (timeSinceFirst > LOGIN_WINDOW_MS) {
+      loginAttempts.delete(clientIP);
+    } else if (attempts.count >= LOGIN_MAX_ATTEMPTS) {
+      const lockoutRemaining = Math.ceil((LOGIN_LOCKOUT_MS - (Date.now() - attempts.lastAttempt)) / 1000);
+      if (lockoutRemaining > 0) {
+        addLog('auth', `Login diblokir (rate limit): ${username} dari IP ${clientIP}`, username);
+        return res.render('login', { error: `⛔ Terlalu banyak percobaan. Coba lagi dalam ${Math.ceil(lockoutRemaining / 60)} menit.` });
+      } else {
+        // Lockout sudah habis, reset
+        loginAttempts.delete(clientIP);
+      }
+    }
+  }
+  
   try {
     const users = JSON.parse(await fs.readFile(USERS_FILE, 'utf8'));
     const user = users.find(u => u.username === username);
     
     if (user && await bcrypt.compare(password, user.password)) {
+      // Login berhasil — reset counter
+      loginAttempts.delete(clientIP);
       req.session.user = { 
         username: user.username,
         role: user.role || 'admin'
@@ -402,8 +440,23 @@ app.post('/login', async (req, res) => {
       addLog('auth', `User ${username} berhasil login (${req.session.user.role})`, username);
       return res.redirect('/dashboard');
     }
-    addLog('auth', `Gagal login: Username ${username} tidak ditemukan atau sandi salah`, username);
-    res.render('login', { error: '❌ Username/password salah' });
+    
+    // Login gagal — increment counter
+    const current = loginAttempts.get(clientIP) || { count: 0, firstAttempt: Date.now(), lastAttempt: Date.now() };
+    current.count++;
+    current.lastAttempt = Date.now();
+    loginAttempts.set(clientIP, current);
+    
+    const remaining = LOGIN_MAX_ATTEMPTS - current.count;
+    addLog('auth', `Gagal login: Username ${username} (sisa ${remaining} percobaan dari IP ${clientIP})`, username);
+    
+    if (remaining <= 0) {
+      res.render('login', { error: `⛔ Akun dikunci sementara. Coba lagi dalam 5 menit.` });
+    } else if (remaining <= 2) {
+      res.render('login', { error: `❌ Username/password salah (sisa ${remaining} percobaan)` });
+    } else {
+      res.render('login', { error: '❌ Username/password salah' });
+    }
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).send('Error login');
@@ -710,15 +763,24 @@ app.post('/schedule/remove', requireAuth, async (req, res) => {
 });
 
 app.post('/schedule/toggle', requireAuth, async (req, res) => {
+  // Anti-spam: cegah toggle berulang
+  if (toggleBusy) {
+    return res.redirect('/dashboard?msg=Tunggu sebentar sebelum mengubah status scheduler&type=error');
+  }
+  toggleBusy = true;
+  
   try {
     let schedules = JSON.parse(await fs.readFile(SCHEDULES_FILE, 'utf8'));
     schedules = ensureSchedules(schedules);
     schedules.enabled = !schedules.enabled;
     await fs.writeFile(SCHEDULES_FILE, JSON.stringify(schedules, null, 2));
+    addLog('system', `Scheduler ${schedules.enabled ? 'diaktifkan' : 'dinonaktifkan'}`, req.session.user.username);
     res.redirect('/dashboard');
   } catch (err) {
     console.error('Toggle error:', err);
     res.status(500).send('Gagal toggle');
+  } finally {
+    setTimeout(() => { toggleBusy = false; }, TOGGLE_COOLDOWN_MS);
   }
 });
 
@@ -846,16 +908,36 @@ app.post('/play', requireAuth, (req, res) => {
   const file = path.basename(req.body.file || '');
   if (!file) return res.status(400).send('File diperlukan');
   
+  // Anti-spam: cegah spam klik play
+  if (playBusy) {
+    return res.redirect('/dashboard?msg=Sistem sedang memproses, tunggu sebentar&type=error');
+  }
+  
   if (isAudioPlaying) {
     return res.redirect('/dashboard?msg=Sistem sedang memutar audio lain&type=error');
   }
 
+  // Set mutex segera SEBELUM playSound (tutup race condition window)
+  playBusy = true;
+  isAudioPlaying = true;
+  activeAudioName = file;
+
   // Gunakan fungsi playSound yang sudah mencakup Relay & State Management
   playSound(file, req.session.user.username);
+  
+  // Beri cooldown sebelum bisa play lagi
+  setTimeout(() => { playBusy = false; }, PLAY_COOLDOWN_MS);
+  
   res.redirect('/dashboard?play=success');
 });
 
 app.post('/stop', requireAuth, (req, res) => {
+  // Anti-spam: cegah spam klik stop
+  if (stopBusy) {
+    return res.redirect('/dashboard?msg=Proses penghentian sedang berjalan, tunggu sebentar&type=error');
+  }
+  stopBusy = true;
+  
   try {
     // Step 1: Unpipe all streams first to prevent EPIPE crashes
     if (activeFfmpegProcess && activeFfmpegProcess.stdout && activeAudioProcess && activeAudioProcess.stdin) {
@@ -882,6 +964,7 @@ app.post('/stop', requireAuth, (req, res) => {
     activeFfmpegProcess = null;
     liveMicProcess = null;
     liveMicFfmpeg = null;
+    playBusy = false; // Reset play mutex juga
     
     if (!manualOverride) relayOff();
 
@@ -912,7 +995,10 @@ app.post('/stop', requireAuth, (req, res) => {
     activeFfmpegProcess = null;
     liveMicProcess = null;
     liveMicFfmpeg = null;
+    playBusy = false;
     res.redirect('/dashboard?stop=error');
+  } finally {
+    setTimeout(() => { stopBusy = false; }, STOP_COOLDOWN_MS);
   }
 });
 
@@ -1194,7 +1280,7 @@ const playSound = async (filename, user = 'System') => {
       return;
     }
 
-    if (isAudioPlaying) {
+    if (isAudioPlaying && activeAudioName !== filename) {
       console.log(`⚠️ Skip pemutaran "${filename}" karena audio lain sedang diputar`);
       return;
     }

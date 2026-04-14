@@ -41,17 +41,36 @@
         </svg>
         Kembali
       </a>
-      <form method="POST" action="/play" class="flex-[2]">
+      <form method="POST" action="/play" class="flex-[2]" onsubmit="return handlePreviewPlay(this)">
         <input type="hidden" name="file" value="<%= file %>" />
-        <button type="submit" class="w-full bg-emerald-600 border-b-4 border-emerald-700 hover:bg-emerald-500 hover:border-emerald-600 text-white px-6 py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg shadow-emerald-500/20 dark:shadow-none transition-all active:scale-[0.98] active:border-b-0 flex items-center justify-center gap-2">
+        <button type="submit" id="btnPreviewPlay" class="w-full bg-emerald-600 border-b-4 border-emerald-700 hover:bg-emerald-500 hover:border-emerald-600 text-white px-6 py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg shadow-emerald-500/20 dark:shadow-none transition-all active:scale-[0.98] active:border-b-0 flex items-center justify-center gap-2">
           <!-- PlayIcon (Solid) -->
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
             <path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" />
           </svg>
-          Putar di Speaker Sekolah
+          <span id="previewPlayText">Putar di Speaker Sekolah</span>
         </button>
       </form>
     </div>
+
+<script>
+  function handlePreviewPlay(form) {
+    const btn = form.querySelector('#btnPreviewPlay');
+    const text = form.querySelector('#previewPlayText');
+    if (btn.disabled) return false;
+    btn.disabled = true;
+    btn.classList.add('opacity-50');
+    btn.style.pointerEvents = 'none';
+    if (text) text.innerText = '⏳ MEMPROSES...';
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.classList.remove('opacity-50');
+      btn.style.pointerEvents = 'auto';
+      if (text) text.innerText = 'Putar di Speaker Sekolah';
+    }, 4000);
+    return true;
+  }
+</script>
   </div>
 </div>
 

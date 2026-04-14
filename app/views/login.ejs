@@ -24,7 +24,7 @@
         </div>
       <% } %>
       
-      <form method="POST" action="/login" class="space-y-6">
+      <form method="POST" action="/login" class="space-y-6" onsubmit="return handleLoginSubmit(this)">
         <div class="space-y-1.5">
           <label class="block text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 px-1 transition-colors">Username</label>
           <div class="relative">
@@ -53,9 +53,9 @@
           </div>
         </div>
         
-        <button type="submit" 
+        <button type="submit" id="btnLogin"
                 class="w-full bg-slate-900 dark:bg-primary-600 border-b-4 border-slate-950 dark:border-primary-700 hover:bg-primary-600 dark:hover:bg-primary-500 hover:border-primary-700 dark:hover:border-primary-600 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg shadow-slate-200 dark:shadow-none transition-all active:scale-[0.98] active:border-b-0 mt-4">
-          Masuk ke Sistem
+          <span id="loginBtnText">Masuk ke Sistem</span>
         </button>
       </form>
       
@@ -77,5 +77,25 @@
   }
   .animate-shake { animation: shake 0.4s ease-in-out; }
 </style>
+
+<script>
+  function handleLoginSubmit(form) {
+    const btn = form.querySelector('#btnLogin');
+    const text = form.querySelector('#loginBtnText');
+    if (btn.disabled) return false;
+    btn.disabled = true;
+    btn.classList.add('opacity-50');
+    btn.style.pointerEvents = 'none';
+    if (text) text.innerText = '⏳ Memverifikasi...';
+    // Auto re-enable setelah 3 detik (jika render error kembali)
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.classList.remove('opacity-50');
+      btn.style.pointerEvents = 'auto';
+      if (text) text.innerText = 'Masuk ke Sistem';
+    }, 3000);
+    return true;
+  }
+</script>
 
 <%- include('partials/footer') %>

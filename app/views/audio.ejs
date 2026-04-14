@@ -11,13 +11,13 @@
   </div>
 
   <div class="flex items-center gap-4">
-    <form method="POST" action="/stop" class="contents">
-        <button type="submit" class="group relative px-8 py-4 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 rounded-2xl transition-all duration-300">
+    <form method="POST" action="/stop" class="contents" onsubmit="return handleStopSubmit(this)">
+        <button type="submit" id="btnPanicStop" class="group relative px-8 py-4 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 rounded-2xl transition-all duration-300">
             <div class="flex items-center gap-3">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5 group-hover:scale-110 transition-transform">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 7.5A2.25 2.25 0 017.5 5.25h9a2.25 2.25 0 012.25 2.25v9a2.25 2.25 0 01-2.25 2.25h-9a2.25 2.25 0 01-2.25-2.25v-9z" />
                 </svg>
-                <span class="text-xs font-black uppercase tracking-[0.2em]">Panic Stop</span>
+                <span class="text-xs font-black uppercase tracking-[0.2em]" id="panicStopText">Panic Stop</span>
             </div>
         </button>
     </form>
@@ -54,7 +54,7 @@
               <p class="text-[9px] font-bold text-slate-600 mt-2">Max. 20MB per file</p>
             </div>
           </div>
-          <button type="submit" class="w-full bg-primary-600 hover:bg-primary-500 text-white font-black py-6 rounded-3xl transition-all shadow-xl shadow-primary-500/20 uppercase tracking-[0.3em] text-xs active:scale-95">START UPLOAD</button>
+          <button type="submit" id="btnUpload" class="w-full bg-primary-600 hover:bg-primary-500 text-white font-black py-6 rounded-3xl transition-all shadow-xl shadow-primary-500/20 uppercase tracking-[0.3em] text-xs active:scale-95" onclick="return handleUploadSubmit(this)">START UPLOAD</button>
         </form>
       </div>
     </div>
@@ -138,17 +138,17 @@
                       <path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.287a6 6 0 010 7.427M12 18.75V5.25" />
                     </svg>
                 </a>
-                <form method="POST" action="/play" class="contents">
+                <form method="POST" action="/play" class="contents" onsubmit="return handlePlaySubmit(this)">
                   <input type="hidden" name="file" value="<%= f %>" />
-                  <button type="submit" class="w-11 h-11 flex items-center justify-center rounded-xl text-emerald-500 hover:bg-emerald-500/20 hover:scale-110 transition-all">
+                  <button type="submit" class="audio-play-btn w-11 h-11 flex items-center justify-center rounded-xl text-emerald-500 hover:bg-emerald-500/20 hover:scale-110 transition-all">
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
                         <path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" />
                       </svg>
                   </button>
                 </form>
-                <form method="POST" action="/music/delete" class="contents" onsubmit="return confirm('Hapus file ini permanen?')">
+                <form method="POST" action="/music/delete" class="contents" onsubmit="return handleDeleteSubmit(this)">
                   <input type="hidden" name="file" value="<%= f %>" />
-                  <button type="submit" class="w-11 h-11 flex items-center justify-center rounded-xl text-red-500 hover:bg-red-500/20 hover:scale-110 transition-all">
+                  <button type="submit" class="audio-delete-btn w-11 h-11 flex items-center justify-center rounded-xl text-red-500 hover:bg-red-500/20 hover:scale-110 transition-all">
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                       </svg>
@@ -174,5 +174,74 @@
     </div>
   </div>
 </div>
+
+<script>
+  // === ANTI-SPAM HANDLERS UNTUK AUDIO PAGE ===
+
+  // Stop button anti-spam
+  function handleStopSubmit(form) {
+    const btn = form.querySelector('#btnPanicStop');
+    const text = form.querySelector('#panicStopText');
+    if (btn.disabled) return false;
+    btn.disabled = true;
+    btn.classList.add('opacity-50');
+    btn.style.pointerEvents = 'none';
+    if (text) text.innerText = '⏳ STOPPING...';
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.classList.remove('opacity-50');
+      btn.style.pointerEvents = 'auto';
+      if (text) text.innerText = 'Panic Stop';
+    }, 3000);
+    return true;
+  }
+
+  // Play button anti-spam (disable semua play button setelah salah satu diklik)
+  function handlePlaySubmit(form) {
+    const btn = form.querySelector('.audio-play-btn');
+    if (btn.disabled) return false;
+    // Disable semua tombol play
+    document.querySelectorAll('.audio-play-btn').forEach(b => {
+      b.disabled = true;
+      b.classList.add('opacity-50');
+      b.style.pointerEvents = 'none';
+    });
+    // Auto re-enable setelah 4 detik
+    setTimeout(() => {
+      document.querySelectorAll('.audio-play-btn').forEach(b => {
+        b.disabled = false;
+        b.classList.remove('opacity-50');
+        b.style.pointerEvents = 'auto';
+      });
+    }, 4000);
+    return true;
+  }
+
+  // Delete button anti-spam (confirm + disable)
+  function handleDeleteSubmit(form) {
+    const btn = form.querySelector('.audio-delete-btn');
+    if (btn.disabled) return false;
+    if (!confirm('Hapus file ini permanen?')) return false;
+    btn.disabled = true;
+    btn.classList.add('opacity-50');
+    btn.style.pointerEvents = 'none';
+    return true;
+  }
+
+  // Upload button anti-spam
+  function handleUploadSubmit(btn) {
+    if (btn.disabled) return false;
+    btn.disabled = true;
+    btn.classList.add('opacity-50');
+    btn.innerText = '⏳ UPLOADING...';
+    // Auto re-enable setelah 10 detik (jika upload lama)
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.classList.remove('opacity-50');
+      btn.innerText = 'START UPLOAD';
+    }, 10000);
+    return true;
+  }
+</script>
 
 <%- include('partials/footer') %>
