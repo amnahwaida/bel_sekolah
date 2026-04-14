@@ -1102,6 +1102,7 @@ app.get("/ampli/status", requireAuth, async (req, res) => {
     res.json({
       relay: relayStatus ? "ON" : "OFF",
       manualOverride,
+      relayBusy,
       deviceAvailable,
       device: RELAY_DEVICE,
       audio: {

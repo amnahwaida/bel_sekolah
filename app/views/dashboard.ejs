@@ -190,14 +190,21 @@
       const data = await response.json();
       currentAmpliState = data.relay === 'ON' ? 'on' : 'off';
       
+      // Jika server bilang relay sedang busy, tampilkan cooldown ke SEMUA user
+      if (data.relayBusy && !isProcessing) {
+        showCooldownState();
+      } else if (!data.relayBusy && !isProcessing) {
+        clearCooldownState();
+      }
+      
       if (currentAmpliState === 'on') {
         indicator.className = 'w-4 h-4 rounded-full bg-primary-400 shadow-[0_0_20px_rgba(var(--primary-rgb),0.5)] ring-4 ring-primary-400/20';
         ring.style.borderColor = 'var(--primary)';
         ring.style.boxShadow = 'inset 0 0 30px rgba(var(--primary-rgb),0.1), 0 0 30px rgba(var(--primary-rgb),0.1)';
-        text.innerText = 'Power Active';
+        text.innerText = data.relayBusy ? '⏳ Cooldown...' : 'Power Active';
         text.className = 'text-primary-400 font-black tracking-[0.2em] text-[11px] uppercase';
         
-        if (btnAmpliToggle) {
+        if (btnAmpliToggle && !isProcessing && !data.relayBusy) {
           btnAmpliToggle.className = 'w-full h-[88px] bg-primary-500 hover:bg-primary-600 text-white rounded-[2.5rem] font-black text-[11px] uppercase tracking-[0.3em] transition-all shadow-xl shadow-primary-500/30 flex items-center justify-center gap-4 active:scale-95 group border-2 border-transparent';
           ampliToggleStatusDot.className = 'w-2 h-2 bg-white rounded-full animate-pulse';
           ampliToggleText.innerText = 'AKTIF';
@@ -206,10 +213,10 @@
         indicator.className = 'w-4 h-4 rounded-full bg-slate-600 ring-4 ring-white/5';
         ring.style.borderColor = '#1e293b';
         ring.style.boxShadow = 'none';
-        text.innerText = 'Standby Mode';
+        text.innerText = data.relayBusy ? '⏳ Cooldown...' : 'Standby Mode';
         text.className = 'text-slate-500 font-black tracking-[0.2em] text-[11px] uppercase';
         
-        if (btnAmpliToggle) {
+        if (btnAmpliToggle && !isProcessing && !data.relayBusy) {
           btnAmpliToggle.className = 'w-full h-[88px] bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-[2.5rem] font-black text-[11px] uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-4 active:scale-95 border border-white/10';
           ampliToggleStatusDot.className = 'w-2 h-2 bg-slate-600 rounded-full';
           ampliToggleText.innerText = 'NONAKTIF';
@@ -220,6 +227,20 @@
     }
   }
 
+  function showCooldownState() {
+    if (!btnAmpliToggle) return;
+    btnAmpliToggle.style.pointerEvents = 'none';
+    btnAmpliToggle.classList.add('opacity-50');
+    ampliToggleText.innerText = '⏳ COOLDOWN...';
+    ampliToggleStatusDot.className = 'w-2 h-2 bg-amber-400 rounded-full animate-pulse';
+  }
+
+  function clearCooldownState() {
+    if (!btnAmpliToggle) return;
+    btnAmpliToggle.style.pointerEvents = 'auto';
+    btnAmpliToggle.classList.remove('opacity-50');
+  }
+
   // Start checking ampli status every 2s
   updateAmpliStatus();
   setInterval(updateAmpliStatus, 2000);
@@ -228,24 +249,21 @@
     if (isProcessing || !btnAmpliToggle) return;
     isProcessing = true;
     
+    // Tampilkan state cooldown di tombol
+    showCooldownState();
     ampliToggleText.innerText = 'MEMPROSES...';
-    
-    // Matikan interaksi tombol (cegah spam murni di UI)
-    btnAmpliToggle.style.pointerEvents = 'none';
-    btnAmpliToggle.classList.add('opacity-50', 'pointer-events-none');
     
     const cmd = currentAmpliState === 'on' ? 'off' : 'on';
     fetch(`/ampli/${cmd}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
     }).finally(() => {
-      // Tambahkan cooldown (1.5 detik) yang selaras dengan backend debounce (1 detik)
+      // Cooldown 2 detik selaras dengan backend debounce
       setTimeout(() => {
         isProcessing = false;
-        btnAmpliToggle.style.pointerEvents = 'auto';
-        btnAmpliToggle.classList.remove('opacity-50', 'pointer-events-none');
+        clearCooldownState();
         updateAmpliStatus();
-      }, 1500); 
+      }, 2000); 
     });
   }
 
