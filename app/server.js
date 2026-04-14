@@ -30,28 +30,24 @@ let activeFfmpegProcess = null;
 let liveMicProcess = null;
 let liveMicFfmpeg = null;
 
-// matikan
-// printf '\x00\xFD\x01\x00\x00\x00\x00\x00' | sudo tee /dev/hidraw1 > /dev/null
-// nyalakan
-// printf '\x00\xFF\x01\x00\x00\x00\x00\x00' | sudo tee /dev/hidraw1 > /dev/null
+// Binary payloads untuk USB HID Relay (8 bytes)
+const RELAY_ON_BUF  = Buffer.from([0x00, 0xFF, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00]);
+const RELAY_OFF_BUF = Buffer.from([0x00, 0xFD, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00]);
 
-// Command ON / OFF (sesuaikan jika beda)
-// const RELAY_ON  = "printf '\x00\xFF\x01\x00\x00\x00\x00\x00' | sudo tee /dev/hidraw1 > /dev/null";
-// const RELAY_OFF = "printf '\x00\xFD\x01\x00\x00\x00\x00\x00' | sudo tee /dev/hidraw1 > /dev/null";
-// const RELAY_ON  = `printf '\x00\xFF\x01\x00\x00\x00\x00\x00' | sudo tee ${RELAY_DEVICE} > /dev/null`;
-// const RELAY_OFF = `printf '\x00\xFD\x01\x00\x00\x00\x00\x00' | sudo tee ${RELAY_DEVICE} > /dev/null`;
-// const RELAY_ON  = `printf '\\x00\\xFF\\x01' > ${RELAY_DEVICE}`;
-// const RELAY_OFF = `printf '\\x00\\xFD\\x01' > ${RELAY_DEVICE}`;
-// ======================
-// KONFIGURASI USB RELAY
-// ======================
+// Mutex & debounce untuk mencegah race condition saat spam on/off
+let relayBusy = false;        // lock agar tidak ada dua perintah relay bersamaan
+let relayDebounceTimer = null; // debounce timer
+const RELAY_DEBOUNCE_MS = 300; // minimum jeda antar perintah relay (ms)
 
-// Ganti sesuai device relay Anda
-
-// Command ON / OFF (TANPA sudo, karena di dalam container)
-const RELAY_ON  = `printf '\\x00\\xFF\\x01\\x00\\x00\\x00\\x00\\x00' > ${RELAY_DEVICE} 2>/dev/null`;
-const RELAY_OFF = `printf '\\x00\\xFD\\x01\\x00\\x00\\x00\\x00\\x00' > ${RELAY_DEVICE} 2>/dev/null`;
-
+// Native relay write — menulis langsung ke device file tanpa shell exec
+const writeRelay = (buf) => {
+  return new Promise((resolve) => {
+    const fd = fsSync.openSync(RELAY_DEVICE, 'w');
+    fsSync.writeSync(fd, buf, 0, buf.length);
+    fsSync.closeSync(fd);
+    resolve(true);
+  });
+};
 
 // Delay sebelum play (ms)
 const AMP_WARMUP = 3000;
@@ -290,16 +286,42 @@ const relayOn = () => {
       resolve();
       return;
     }
-    exec(RELAY_ON, (error) => {
-      if (error) {
-        console.error("⚠️ Gagal menyalakan relay (device mungkin tercabut):", error.message);
-      } else {
-        relayStatus = true;
-        console.log("🔌 Amplifier ON");
-      }
-      setTimeout(resolve, AMP_WARMUP);
-    });
+
+    // Mutex: cegah concurrent write ke device
+    if (relayBusy) {
+      console.log("⏳ Relay sedang diproses, menunggu...");
+      const waitInterval = setInterval(() => {
+        if (!relayBusy) {
+          clearInterval(waitInterval);
+          doRelayOn(resolve);
+        }
+      }, 100);
+      // Safety timeout agar tidak stuck selamanya
+      setTimeout(() => {
+        clearInterval(waitInterval);
+        relayBusy = false;
+        doRelayOn(resolve);
+      }, 2000);
+      return;
+    }
+
+    doRelayOn(resolve);
   });
+};
+
+const doRelayOn = (resolve) => {
+  relayBusy = true;
+  try {
+    writeRelay(RELAY_ON_BUF);
+    relayStatus = true;
+    console.log("🔌 Amplifier ON");
+  } catch (error) {
+    console.error("⚠️ Gagal menyalakan relay:", error.message);
+  } finally {
+    // Beri jeda sebelum bisa dipakai lagi
+    setTimeout(() => { relayBusy = false; }, RELAY_DEBOUNCE_MS);
+  }
+  setTimeout(resolve, AMP_WARMUP);
 };
 
 const relayOff = () => {
@@ -321,15 +343,38 @@ const relayOff = () => {
     return;
   }
 
-  exec(RELAY_OFF, (error) => {
-    if (error) {
-      console.error('⚠️ Gagal mematikan relay (device mungkin tercabut):', error.message);
-      relayStatus = false; // Reset status anyway
-      return;
-    }
+  // Mutex: cegah concurrent write
+  if (relayBusy) {
+    console.log("⏳ Relay sedang diproses, jadwalkan OFF setelah selesai...");
+    const waitInterval = setInterval(() => {
+      if (!relayBusy) {
+        clearInterval(waitInterval);
+        doRelayOff();
+      }
+    }, 100);
+    setTimeout(() => {
+      clearInterval(waitInterval);
+      relayBusy = false;
+      doRelayOff();
+    }, 2000);
+    return;
+  }
+
+  doRelayOff();
+};
+
+const doRelayOff = () => {
+  relayBusy = true;
+  try {
+    writeRelay(RELAY_OFF_BUF);
     relayStatus = false;
     console.log("✅ 🔌 Amplifier OFF (otomatis)");
-  });
+  } catch (error) {
+    console.error('⚠️ Gagal mematikan relay:', error.message);
+    relayStatus = false; // Reset status anyway
+  } finally {
+    setTimeout(() => { relayBusy = false; }, RELAY_DEBOUNCE_MS);
+  }
 };
 
 
@@ -937,33 +982,46 @@ app.post("/ampli/on", requireAuth, async (req, res) => {
       });
     }
 
-    manualOverride = true;
+    // Debounce: cegah spam klik
+    if (relayBusy) {
+      return res.json({ 
+        success: false, 
+        error: 'Relay sedang diproses, tunggu sebentar',
+        status: relayStatus ? "ON" : "OFF"
+      });
+    }
 
-    exec(RELAY_ON, (error) => {
-      if (error) {
-        console.error('❌ Gagal menyalakan amplifier:', error);
-        relayStatus = false;
-        return res.json({ 
-          success: false, 
-          error: 'Gagal menyalakan amplifier',
-          status: "OFF"
-        });
-      }
-      
+    manualOverride = true;
+    relayBusy = true;
+
+    try {
+      writeRelay(RELAY_ON_BUF);
       relayStatus = true;
       console.log("✅ 🔌 Amplifier ON (manual)");
+    } catch (error) {
+      console.error('❌ Gagal menyalakan amplifier:', error.message);
+      relayBusy = false;
+      return res.json({ 
+        success: false, 
+        error: 'Gagal menyalakan amplifier: ' + error.message,
+        status: "OFF"
+      });
+    }
+
+    // Beri jeda debounce setelah write berhasil
+    setTimeout(() => { relayBusy = false; }, RELAY_DEBOUNCE_MS);
       
-      // Tunggu warmup sebelum kirim response
-      setTimeout(() => {
-        res.json({ 
-          success: true, 
-          status: "ON",
-          message: "Amplifier menyala"
-        });
-      }, AMP_WARMUP);
-    });
+    // Tunggu warmup sebelum kirim response
+    setTimeout(() => {
+      res.json({ 
+        success: true, 
+        status: "ON",
+        message: "Amplifier menyala"
+      });
+    }, AMP_WARMUP);
   } catch (err) {
     console.error('❌ Error di /ampli/on:', err);
+    relayBusy = false;
     res.status(500).json({ 
       success: false, 
       error: 'Terjadi kesalahan server',
@@ -983,30 +1041,43 @@ app.post("/ampli/off", requireAuth, async (req, res) => {
       });
     }
 
-    manualOverride = false;
+    // Debounce: cegah spam klik
+    if (relayBusy) {
+      return res.json({ 
+        success: false, 
+        error: 'Relay sedang diproses, tunggu sebentar',
+        status: relayStatus ? "ON" : "OFF"
+      });
+    }
 
-    exec(RELAY_OFF, (error) => {
-      if (error) {
-        console.error('❌ Gagal mematikan amplifier:', error);
-        relayStatus = true;
-        return res.json({ 
-          success: false, 
-          error: 'Gagal mematikan amplifier',
-          status: "ON"
-        });
-      }
-      
+    manualOverride = false;
+    relayBusy = true;
+
+    try {
+      writeRelay(RELAY_OFF_BUF);
       relayStatus = false;
       console.log("✅ 🔌 Amplifier OFF (manual)");
-      
-      res.json({ 
-        success: true, 
-        status: "OFF",
-        message: "Amplifier mati"
+    } catch (error) {
+      console.error('❌ Gagal mematikan amplifier:', error.message);
+      relayBusy = false;
+      return res.json({ 
+        success: false, 
+        error: 'Gagal mematikan amplifier: ' + error.message,
+        status: "ON"
       });
+    }
+
+    // Beri jeda debounce setelah write berhasil
+    setTimeout(() => { relayBusy = false; }, RELAY_DEBOUNCE_MS);
+      
+    res.json({ 
+      success: true, 
+      status: "OFF",
+      message: "Amplifier mati"
     });
   } catch (err) {
     console.error('❌ Error di /ampli/off:', err);
+    relayBusy = false;
     res.status(500).json({ 
       success: false, 
       error: 'Terjadi kesalahan server',
