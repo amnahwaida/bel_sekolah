@@ -126,6 +126,7 @@ const SCHEDULES_FILE = path.join(DATA_DIR, 'schedules.json');
 const SPECIAL_SCHEDULES_FILE = path.join(DATA_DIR, 'special_schedules.json');
 const LOGS_FILE = path.join(DATA_DIR, 'logs.json');
 const BRANDING_FILE = path.join(DATA_DIR, 'branding.json');
+const AUDIO_SETTINGS_FILE = path.join(DATA_DIR, 'audio_settings.json');
 
 if (!fsSync.existsSync(USERS_FILE)) fsSync.writeFileSync(USERS_FILE, JSON.stringify([{ username: 'smamsa', password: 'smamsa12', role: 'root' }]));
 if (!fsSync.existsSync(SCHEDULES_FILE)) fsSync.writeFileSync(SCHEDULES_FILE, JSON.stringify({
@@ -147,6 +148,77 @@ if (!fsSync.existsSync(BRANDING_FILE)) {
     faviconUrl: null
   }, null, 2));
 }
+
+// Default audio settings
+const DEFAULT_AUDIO_SETTINGS = {
+  volume: 85,     // 0-100 (amixer master volume %)
+  bass: 0,        // -20 to +20 dB
+  treble: 0,      // -20 to +20 dB  
+  midrange: 0,    // -20 to +20 dB (mid EQ)
+  micVolume: 100, // 0-100 (mic gain for live mic)
+  micBass: 0,     // -20 to +20 dB
+  micTreble: 0    // -20 to +20 dB
+};
+if (!fsSync.existsSync(AUDIO_SETTINGS_FILE)) {
+  fsSync.writeFileSync(AUDIO_SETTINGS_FILE, JSON.stringify(DEFAULT_AUDIO_SETTINGS, null, 2));
+}
+
+// Helper: Read audio settings
+const getAudioSettings = () => {
+  try {
+    return { ...DEFAULT_AUDIO_SETTINGS, ...JSON.parse(fsSync.readFileSync(AUDIO_SETTINGS_FILE, 'utf8')) };
+  } catch (e) {
+    return { ...DEFAULT_AUDIO_SETTINGS };
+  }
+};
+
+// Helper: Build ffmpeg audio filter string from settings
+const buildAudioFilter = (settings, isMic = false) => {
+  const filters = [];
+  const bass = isMic ? (settings.micBass || 0) : (settings.bass || 0);
+  const treble = isMic ? (settings.micTreble || 0) : (settings.treble || 0);
+  const mid = isMic ? 0 : (settings.midrange || 0);
+  const vol = isMic ? (settings.micVolume || 100) : (settings.volume || 100);
+  
+  // Bass EQ (low shelf at 100Hz)
+  if (bass !== 0) {
+    filters.push(`equalizer=f=100:t=h:w=200:g=${bass}`);
+  }
+  // Midrange EQ (peak at 1000Hz)
+  if (mid !== 0) {
+    filters.push(`equalizer=f=1000:t=h:w=800:g=${mid}`);
+  }
+  // Treble EQ (high shelf at 3000Hz)
+  if (treble !== 0) {
+    filters.push(`equalizer=f=3000:t=h:w=2000:g=${treble}`);
+  }
+  // Volume adjustment
+  if (vol !== 100) {
+    filters.push(`volume=${vol / 100}`);
+  }
+  
+  return filters.length > 0 ? filters.join(',') : null;
+};
+
+// Helper: Apply system volume via amixer
+const applySystemVolume = (volumePercent) => {
+  try {
+    // Coba berbagai control name yang umum di STB/Linux
+    const controls = ['Master', 'PCM', 'Speaker', 'Headphone'];
+    for (const ctrl of controls) {
+      try {
+        require('child_process').execSync(`amixer set '${ctrl}' ${volumePercent}% 2>/dev/null`, { timeout: 2000 });
+        console.log(`🔊 Volume ${ctrl} diatur ke ${volumePercent}%`);
+        return true;
+      } catch (e) { /* skip unavailable control */ }
+    }
+    console.warn('⚠️ Tidak ada ALSA control yang tersedia untuk volume');
+    return false;
+  } catch (e) {
+    console.error('❌ Gagal mengatur volume sistem:', e.message);
+    return false;
+  }
+};
 
 // HELPER: Safe Redirect Back
 const safeRedirect = (req, res, defaultPath, queryParams = {}) => {
@@ -545,10 +617,12 @@ app.get('/audio', requireAuth, async (req, res) => {
 app.get('/settings', requireAuth, async (req, res) => {
   try {
     const users = JSON.parse(await fs.readFile(USERS_FILE, 'utf8'));
+    const audioSettings = getAudioSettings();
     res.render('settings', { 
       msg: req.query.msg || null, 
       type: req.query.type || 'info',
       activePage: 'settings',
+      audioSettings,
       allUsers: users.map(u => ({ username: u.username, role: u.role || 'admin' })) // Sertakan role untuk view
     });
   } catch (err) {
@@ -1242,6 +1316,66 @@ app.get("/ampli/health", requireAuth, async (req, res) => {
   });
 });
 
+// =======================
+// AUDIO SETTINGS API
+// =======================
+
+app.get('/api/audio-settings', requireAuth, (req, res) => {
+  res.json(getAudioSettings());
+});
+
+app.post('/api/audio-settings', requireAuth, async (req, res) => {
+  try {
+    const current = getAudioSettings();
+    const updates = {};
+    
+    // Validasi dan clamp setiap field
+    const fields = [
+      { key: 'volume', min: 0, max: 100 },
+      { key: 'bass', min: -20, max: 20 },
+      { key: 'treble', min: -20, max: 20 },
+      { key: 'midrange', min: -20, max: 20 },
+      { key: 'micVolume', min: 0, max: 100 },
+      { key: 'micBass', min: -20, max: 20 },
+      { key: 'micTreble', min: -20, max: 20 }
+    ];
+    
+    for (const f of fields) {
+      if (req.body[f.key] !== undefined) {
+        const val = parseFloat(req.body[f.key]);
+        if (!isNaN(val)) {
+          updates[f.key] = Math.max(f.min, Math.min(f.max, val));
+        }
+      }
+    }
+    
+    const merged = { ...current, ...updates };
+    await fs.writeFile(AUDIO_SETTINGS_FILE, JSON.stringify(merged, null, 2));
+    
+    // Terapkan volume sistem via amixer
+    if (updates.volume !== undefined) {
+      applySystemVolume(merged.volume);
+    }
+    
+    addLog('config', `Audio settings diperbarui: ${JSON.stringify(updates)}`, req.session.user.username);
+    res.json({ success: true, settings: merged });
+  } catch (err) {
+    console.error('Audio settings error:', err);
+    res.status(500).json({ success: false, error: 'Gagal menyimpan pengaturan audio' });
+  }
+});
+
+app.post('/api/audio-settings/reset', requireAuth, async (req, res) => {
+  try {
+    await fs.writeFile(AUDIO_SETTINGS_FILE, JSON.stringify(DEFAULT_AUDIO_SETTINGS, null, 2));
+    applySystemVolume(DEFAULT_AUDIO_SETTINGS.volume);
+    addLog('config', 'Audio settings direset ke default', req.session.user.username);
+    res.json({ success: true, settings: DEFAULT_AUDIO_SETTINGS });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Gagal reset audio settings' });
+  }
+});
+
 const runScheduler = async () => {
   try {
     if (!fsSync.existsSync(SCHEDULES_FILE)) {
@@ -1319,9 +1453,34 @@ const playSound = async (filename, user = 'System') => {
     }
 
     if (filename.toLowerCase().endsWith('.wav')) {
-      activeAudioProcess = spawn('aplay', ['-D', 'plughw:0,0', filePath]);
+      // WAV: pipe melalui ffmpeg untuk EQ, lalu ke aplay
+      const audioSettings = getAudioSettings();
+      const audioFilter = buildAudioFilter(audioSettings, false);
+      
+      if (audioFilter) {
+        activeFfmpegProcess = spawn('ffmpeg', [
+          '-i', filePath,
+          '-af', audioFilter,
+          '-f', 'wav',
+          '-loglevel', 'quiet',
+          '-'
+        ]);
+        activeAudioProcess = spawn('aplay', ['-D', 'plughw:0,0', '-q']);
+        activeFfmpegProcess.stdout.pipe(activeAudioProcess.stdin);
+        activeFfmpegProcess.stderr.resume();
+      } else {
+        activeAudioProcess = spawn('aplay', ['-D', 'plughw:0,0', filePath]);
+      }
     } else if (filename.toLowerCase().endsWith('.mp3')) {
-      activeFfmpegProcess = spawn('ffmpeg', ['-i', filePath, '-f', 'wav', '-loglevel', 'quiet', '-']);
+      const audioSettings = getAudioSettings();
+      const audioFilter = buildAudioFilter(audioSettings, false);
+      const ffmpegArgs = ['-i', filePath];
+      if (audioFilter) {
+        ffmpegArgs.push('-af', audioFilter);
+      }
+      ffmpegArgs.push('-f', 'wav', '-loglevel', 'quiet', '-');
+      
+      activeFfmpegProcess = spawn('ffmpeg', ffmpegArgs);
       activeAudioProcess = spawn('aplay', ['-D', 'plughw:0,0', '-q']);
       activeFfmpegProcess.stdout.pipe(activeAudioProcess.stdin);
       activeFfmpegProcess.stderr.resume();
@@ -1426,15 +1585,24 @@ io.on('connection', (socket) => {
 
     if (!manualOverride) await relayOn();
 
-    // Spawn ffmpeg to decode incoming WebM/Opus and pipe to aplay
-    liveMicFfmpeg = spawn('ffmpeg', [
+    // Spawn ffmpeg to decode incoming WebM/Opus with EQ filters and pipe to aplay
+    const audioSettings = getAudioSettings();
+    const micFilter = buildAudioFilter(audioSettings, true);
+    const ffmpegArgs = [
       '-i', 'pipe:0',
+    ];
+    if (micFilter) {
+      ffmpegArgs.push('-af', micFilter);
+    }
+    ffmpegArgs.push(
       '-f', 's16le',
       '-ar', '44100',
       '-ac', '1',
       'pipe:1',
       '-loglevel', 'quiet'
-    ]);
+    );
+    
+    liveMicFfmpeg = spawn('ffmpeg', ffmpegArgs);
 
     liveMicProcess = spawn('aplay', ['-D', 'plughw:0,0', '-r', '44100', '-f', 'S16_LE', '-c', '1', '-q']);
 
