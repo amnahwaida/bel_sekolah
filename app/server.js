@@ -30,22 +30,22 @@ let activeFfmpegProcess = null;
 let liveMicProcess = null;
 let liveMicFfmpeg = null;
 
-// Binary payloads untuk USB HID Relay (8 bytes)
-const RELAY_ON_BUF  = Buffer.from([0x00, 0xFF, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00]);
-const RELAY_OFF_BUF = Buffer.from([0x00, 0xFD, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00]);
+// Command ON / OFF (TANPA sudo, karena di dalam container)
+const RELAY_ON  = `printf '\\x00\\xFF\\x01\\x00\\x00\\x00\\x00\\x00' > ${RELAY_DEVICE} 2>/dev/null`;
+const RELAY_OFF = `printf '\\x00\\xFD\\x01\\x00\\x00\\x00\\x00\\x00' > ${RELAY_DEVICE} 2>/dev/null`;
 
 // Mutex & debounce untuk mencegah race condition saat spam on/off
 let relayBusy = false;        // lock agar tidak ada dua perintah relay bersamaan
 let relayDebounceTimer = null; // debounce timer
 const RELAY_DEBOUNCE_MS = 300; // minimum jeda antar perintah relay (ms)
 
-// Native relay write — menulis langsung ke device file tanpa shell exec
-const writeRelay = (buf) => {
-  return new Promise((resolve) => {
-    const fd = fsSync.openSync(RELAY_DEVICE, 'w');
-    fsSync.writeSync(fd, buf, 0, buf.length);
-    fsSync.closeSync(fd);
-    resolve(true);
+// Relay write menggunakan exec untuk menghindari error EPROTO di Node.js
+const writeRelay = (cmd) => {
+  return new Promise((resolve, reject) => {
+    exec(cmd, (error) => {
+      if (error) reject(error);
+      else resolve(true);
+    });
   });
 };
 
@@ -309,10 +309,10 @@ const relayOn = () => {
   });
 };
 
-const doRelayOn = (resolve) => {
+const doRelayOn = async (resolve) => {
   relayBusy = true;
   try {
-    writeRelay(RELAY_ON_BUF);
+    await writeRelay(RELAY_ON);
     relayStatus = true;
     console.log("🔌 Amplifier ON");
   } catch (error) {
@@ -363,10 +363,10 @@ const relayOff = () => {
   doRelayOff();
 };
 
-const doRelayOff = () => {
+const doRelayOff = async () => {
   relayBusy = true;
   try {
-    writeRelay(RELAY_OFF_BUF);
+    await writeRelay(RELAY_OFF);
     relayStatus = false;
     console.log("✅ 🔌 Amplifier OFF (otomatis)");
   } catch (error) {
@@ -995,7 +995,7 @@ app.post("/ampli/on", requireAuth, async (req, res) => {
     relayBusy = true;
 
     try {
-      writeRelay(RELAY_ON_BUF);
+      await writeRelay(RELAY_ON);
       relayStatus = true;
       console.log("✅ 🔌 Amplifier ON (manual)");
     } catch (error) {
@@ -1054,7 +1054,7 @@ app.post("/ampli/off", requireAuth, async (req, res) => {
     relayBusy = true;
 
     try {
-      writeRelay(RELAY_OFF_BUF);
+      await writeRelay(RELAY_OFF);
       relayStatus = false;
       console.log("✅ 🔌 Amplifier OFF (manual)");
     } catch (error) {
