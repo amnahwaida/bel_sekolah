@@ -37,16 +37,25 @@ const RELAY_OFF = `printf '\\x00\\xFD\\x01\\x00\\x00\\x00\\x00\\x00' > ${RELAY_D
 // Mutex & debounce untuk mencegah race condition saat spam on/off
 let relayBusy = false;        // lock agar tidak ada dua perintah relay bersamaan
 let relayDebounceTimer = null; // debounce timer
-const RELAY_DEBOUNCE_MS = 300; // minimum jeda antar perintah relay (ms)
+const RELAY_DEBOUNCE_MS = 1000; // minimum jeda antar perintah relay (ms)
 
-// Relay write menggunakan exec untuk menghindari error EPROTO di Node.js
-const writeRelay = (cmd) => {
-  return new Promise((resolve, reject) => {
-    exec(cmd, (error) => {
-      if (error) reject(error);
-      else resolve(true);
-    });
-  });
+// Relay write dengan auto-retry untuk menghindari hardware EPROTO fail di STB
+const writeRelay = async (cmd, retries = 3) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await new Promise((resolve, reject) => {
+        exec(cmd, (error) => {
+          if (error) reject(error);
+          else resolve(true);
+        });
+      });
+      return true; // Berhasil
+    } catch (error) {
+      if (i === retries - 1) throw error; // Jika percobaan terakhir gagal
+      console.warn(`⚠️ EPROTO/Write fail... retry \${i+1}/\${retries}`);
+      await new Promise(r => setTimeout(r, 500)); // tunggu sebelum retry
+    }
+  }
 };
 
 // Delay sebelum play (ms)
