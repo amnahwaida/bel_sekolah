@@ -16,6 +16,43 @@
           .catch(err => console.log('SW Failed', err));
       });
     }
+
+    // PWA Install Logic
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      // Prevent Chrome 67 and earlier from automatically showing the prompt
+      e.preventDefault();
+      // Stash the event so it can be triggered later.
+      deferredPrompt = e;
+      // Show the install button in the sidebar
+      const installContainer = document.getElementById('pwaInstallContainer');
+      if (installContainer) installContainer.classList.remove('hidden');
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const btnInstall = document.getElementById('btnPWAInstall');
+        if (btnInstall) {
+            btnInstall.addEventListener('click', async () => {
+                if (!deferredPrompt) return;
+                // Show the prompt
+                deferredPrompt.prompt();
+                // Wait for the user to respond to the prompt
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`User response to the install prompt: ${outcome}`);
+                // We've used the prompt, and can't use it again, throw it away
+                deferredPrompt = null;
+                // Hide the install button
+                const installContainer = document.getElementById('pwaInstallContainer');
+                if (installContainer) installContainer.classList.add('hidden');
+            });
+        }
+    });
+
+    window.addEventListener('appinstalled', (event) => {
+      console.log('App was installed.');
+      const installContainer = document.getElementById('pwaInstallContainer');
+      if (installContainer) installContainer.classList.add('hidden');
+    });
   </script>
 <% if (branding.faviconUrl) { %>
   <link rel="icon" href="<%= branding.faviconUrl %>">
@@ -275,6 +312,16 @@
         </svg>
         <span class="nav-text font-black text-xs uppercase tracking-widest">Security</span>
       </a>
+
+      <!-- PWA Install Button -->
+      <div id="pwaInstallContainer" class="hidden pt-6">
+        <button id="btnPWAInstall" class="nav-item flex items-center gap-4 w-full px-4 py-4 rounded-2xl bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white border border-emerald-500/20 transition-all group">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="nav-icon w-5 h-5 group-hover:bounce transition-all">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+          </svg>
+          <span class="nav-text font-black text-xs uppercase tracking-widest">Install App</span>
+        </button>
+      </div>
     </nav>
 
     <!-- Version & Logout -->
