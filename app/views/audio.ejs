@@ -175,7 +175,183 @@
   </div>
 </div>
 
+  <!-- AUDIO CONTROL PANEL SECTION -->
+  <div class="mt-16 glass-premium rounded-[4rem] border border-white/5 relative group overflow-hidden" id="audioSettingsPanel">
+    <div class="absolute -left-32 -top-32 w-96 h-96 bg-purple-500 rounded-full opacity-[0.03] blur-[120px] group-hover:opacity-[0.08] transition-opacity duration-1000"></div>
+    
+    <div class="p-12 lg:p-16 relative z-10">
+      <h2 class="text-3xl font-black text-white mb-12 flex items-center gap-5 tracking-tight">
+        <div class="p-4 bg-purple-500/10 text-purple-400 rounded-3xl shadow-inner">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-8 h-8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z" />
+          </svg>
+        </div>
+        Audio Control Panel
+      </h2>
+
+      <p class="text-slate-400 text-sm mb-12 font-medium italic pr-8 leading-relaxed">Pengaturan filter Digital EQ dan volume perangkat keras. Berlaku secara global untuk semua audio yang diputar melalui Amplifier.</p>
+
+      <form id="audioSettingsForm" class="space-y-12">
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-12">
+          
+          <!-- Master / MP3 Playback -->
+          <div class="space-y-8 bg-white/5 p-8 rounded-[2.5rem] border border-white/5">
+            <h3 class="text-white font-black uppercase tracking-widest text-lg flex items-center gap-3">
+              <span class="w-2 h-8 bg-purple-500 rounded-full"></span>
+              MP3 & WAV Playback
+            </h3>
+
+            <!-- Sys Volume -->
+            <div class="space-y-3">
+              <div class="flex justify-between items-center px-1">
+                <label class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 italic">Hardware Volume (%)</label>
+                <span class="text-purple-400 font-black text-sm" id="volDisplay"><%= typeof audioSettings !== 'undefined' ? audioSettings.volume : 85 %>%</span>
+              </div>
+              <input type="range" name="volume" min="0" max="100" value="<%= typeof audioSettings !== 'undefined' ? audioSettings.volume : 85 %>" 
+                    class="w-full h-3 bg-black/40 rounded-full appearance-none cursor-pointer accent-purple-500" 
+                    oninput="document.getElementById('volDisplay').innerText = this.value + '%'">
+            </div>
+
+            <!-- EQ Bass -->
+            <div class="space-y-3">
+              <div class="flex justify-between items-center px-1">
+                <label class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 italic">Low (Bass) EQ</label>
+                <span class="text-white font-black text-sm" id="bassDisplay"><%= typeof audioSettings !== 'undefined' ? audioSettings.bass : 0 %> dB</span>
+              </div>
+              <input type="range" name="bass" min="-20" max="20" value="<%= typeof audioSettings !== 'undefined' ? audioSettings.bass : 0 %>" 
+                    class="w-full h-3 bg-black/40 rounded-full appearance-none cursor-pointer accent-slate-300" 
+                    oninput="document.getElementById('bassDisplay').innerText = this.value + ' dB'">
+            </div>
+
+            <!-- EQ Mid -->
+            <div class="space-y-3">
+              <div class="flex justify-between items-center px-1">
+                <label class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 italic">Midrange EQ</label>
+                <span class="text-white font-black text-sm" id="midDisplay"><%= typeof audioSettings !== 'undefined' ? audioSettings.midrange : 0 %> dB</span>
+              </div>
+              <input type="range" name="midrange" min="-20" max="20" value="<%= typeof audioSettings !== 'undefined' ? audioSettings.midrange : 0 %>" 
+                    class="w-full h-3 bg-black/40 rounded-full appearance-none cursor-pointer accent-slate-300" 
+                    oninput="document.getElementById('midDisplay').innerText = this.value + ' dB'">
+            </div>
+
+            <!-- EQ Treble -->
+            <div class="space-y-3">
+              <div class="flex justify-between items-center px-1">
+                <label class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 italic">High (Treble) EQ</label>
+                <span class="text-white font-black text-sm" id="trebleDisplay"><%= typeof audioSettings !== 'undefined' ? audioSettings.treble : 0 %> dB</span>
+              </div>
+              <input type="range" name="treble" min="-20" max="20" value="<%= typeof audioSettings !== 'undefined' ? audioSettings.treble : 0 %>" 
+                    class="w-full h-3 bg-black/40 rounded-full appearance-none cursor-pointer accent-slate-300" 
+                    oninput="document.getElementById('trebleDisplay').innerText = this.value + ' dB'">
+            </div>
+          </div>
+
+          <!-- Live Mic Playback -->
+          <div class="space-y-8 bg-white/5 p-8 rounded-[2.5rem] border border-white/5">
+            <h3 class="text-white font-black uppercase tracking-widest text-lg flex items-center gap-3">
+              <span class="w-2 h-8 bg-rose-500 rounded-full"></span>
+              Live Microphone (Siaran)
+            </h3>
+
+            <!-- Mic Volume/Gain -->
+            <div class="space-y-3">
+              <div class="flex justify-between items-center px-1">
+                <label class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 italic">Mic Software Gain (%)</label>
+                <span class="text-rose-400 font-black text-sm" id="micVolDisplay"><%= typeof audioSettings !== 'undefined' ? audioSettings.micVolume : 100 %>%</span>
+              </div>
+              <input type="range" name="micVolume" min="0" max="200" value="<%= typeof audioSettings !== 'undefined' ? audioSettings.micVolume : 100 %>" 
+                    class="w-full h-3 bg-black/40 rounded-full appearance-none cursor-pointer accent-rose-500" 
+                    oninput="document.getElementById('micVolDisplay').innerText = this.value + '%'">
+            </div>
+
+            <!-- Mic Bass -->
+            <div class="space-y-3">
+              <div class="flex justify-between items-center px-1">
+                <label class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 italic">Mic Bass EQ</label>
+                <span class="text-white font-black text-sm" id="micBassDisplay"><%= typeof audioSettings !== 'undefined' ? audioSettings.micBass : 0 %> dB</span>
+              </div>
+              <input type="range" name="micBass" min="-20" max="20" value="<%= typeof audioSettings !== 'undefined' ? audioSettings.micBass : 0 %>" 
+                    class="w-full h-3 bg-black/40 rounded-full appearance-none cursor-pointer accent-slate-300" 
+                    oninput="document.getElementById('micBassDisplay').innerText = this.value + ' dB'">
+            </div>
+
+            <!-- Mic Treble -->
+            <div class="space-y-3">
+              <div class="flex justify-between items-center px-1">
+                <label class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 italic">Mic Treble EQ</label>
+                <span class="text-white font-black text-sm" id="micTrebleDisplay"><%= typeof audioSettings !== 'undefined' ? audioSettings.micTreble : 0 %> dB</span>
+              </div>
+              <input type="range" name="micTreble" min="-20" max="20" value="<%= typeof audioSettings !== 'undefined' ? audioSettings.micTreble : 0 %>" 
+                    class="w-full h-3 bg-black/40 rounded-full appearance-none cursor-pointer accent-slate-300" 
+                    oninput="document.getElementById('micTrebleDisplay').innerText = this.value + ' dB'">
+            </div>
+
+          </div>
+        </div>
+
+        <div class="flex gap-4 pt-4 border-t border-white/5">
+          <button type="submit" id="btnSaveAudio" class="flex-[3] bg-purple-600 hover:bg-purple-500 text-white py-6 rounded-3xl font-black text-[11px] uppercase tracking-[0.3em] transition-all shadow-xl shadow-purple-600/20 active:scale-95 flex items-center justify-center gap-3">
+            <span id="audioSaveText">APPLY AUDIO FILTERS</span>
+          </button>
+          <button type="button" onclick="resetAudio()" class="flex-1 bg-white/5 hover:bg-red-500/10 text-slate-500 hover:text-red-500 border border-white/10 hover:border-red-500/30 py-6 rounded-3xl font-black text-[11px] uppercase tracking-[0.3em] transition-all" onclick="return confirm('⚠️ Reset all audio parameters to default?')">RESET DEFAULTS</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
 <script>
+  // === AUDIO CONTROL PANEL HANDLERS ===
+  const audioSettingsForm = document.getElementById('audioSettingsForm');
+  if (audioSettingsForm) {
+    audioSettingsForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnSaveAudio');
+      const text = document.getElementById('audioSaveText');
+      if (btn.disabled) return;
+      btn.disabled = true;
+      btn.classList.add('opacity-50');
+      text.innerText = 'APPLYING...';
+
+      const formData = new FormData(e.target);
+      const data = Object.fromEntries(formData.entries());
+      
+      try {
+        const res = await fetch('/api/audio-settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (res.ok) {
+          if (typeof showToast === 'function') showToast('Pengaturan audio diterapkan', 'success');
+          text.innerText = 'SUCCESS!';
+        } else {
+          if (typeof showToast === 'function') showToast('Gagal menerapkan pengaturan', 'error');
+          text.innerText = 'FAILED';
+        }
+      } catch (err) {
+        text.innerText = 'ERROR';
+      } finally {
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.classList.remove('opacity-50');
+          text.innerText = 'APPLY AUDIO FILTERS';
+        }, 2000);
+      }
+    });
+  }
+
+  async function resetAudio() {
+    if (!confirm('Yakin ingin mereset semua EQ & Volume ke default?')) return;
+    try {
+      const res = await fetch('/api/audio-settings/reset', { method: 'POST' });
+      if (res.ok) {
+        if (typeof showToast === 'function') showToast('Audio direset', 'success');
+        setTimeout(() => location.reload(), 1000);
+      }
+    } catch (er) {}
+  }
+
   // === ANTI-SPAM HANDLERS UNTUK AUDIO PAGE ===
 
   // Stop button anti-spam

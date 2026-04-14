@@ -602,11 +602,13 @@ app.get('/audio', requireAuth, async (req, res) => {
     const musicFiles = files.filter(f => /\.(mp3|wav)$/i.test(f));
     let schedules = JSON.parse(await fs.readFile(SCHEDULES_FILE, 'utf8'));
     schedules = ensureSchedules(schedules);
+    const audioSettings = getAudioSettings();
     res.render('audio', { 
       musicFiles,
       activePage: 'audio',
       quickCallFile: schedules.quickCallFile || null,
-      rename: req.query.rename
+      rename: req.query.rename,
+      audioSettings
     });
   } catch (err) {
     res.status(500).send('Error loading audio library');
@@ -617,12 +619,10 @@ app.get('/audio', requireAuth, async (req, res) => {
 app.get('/settings', requireAuth, async (req, res) => {
   try {
     const users = JSON.parse(await fs.readFile(USERS_FILE, 'utf8'));
-    const audioSettings = getAudioSettings();
     res.render('settings', { 
       msg: req.query.msg || null, 
       type: req.query.type || 'info',
       activePage: 'settings',
-      audioSettings,
       allUsers: users.map(u => ({ username: u.username, role: u.role || 'admin' })) // Sertakan role untuk view
     });
   } catch (err) {
