@@ -225,20 +225,27 @@
   setInterval(updateAmpliStatus, 2000);
 
   function toggleAmpliBtn() {
-    if (isProcessing) return;
+    if (isProcessing || !btnAmpliToggle) return;
     isProcessing = true;
     
     ampliToggleText.innerText = 'MEMPROSES...';
+    
+    // Matikan interaksi tombol (cegah spam murni di UI)
+    btnAmpliToggle.style.pointerEvents = 'none';
+    btnAmpliToggle.classList.add('opacity-50', 'pointer-events-none');
     
     const cmd = currentAmpliState === 'on' ? 'off' : 'on';
     fetch(`/ampli/${cmd}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
     }).finally(() => {
+      // Tambahkan cooldown (1.5 detik) yang selaras dengan backend debounce (1 detik)
       setTimeout(() => {
         isProcessing = false;
+        btnAmpliToggle.style.pointerEvents = 'auto';
+        btnAmpliToggle.classList.remove('opacity-50', 'pointer-events-none');
         updateAmpliStatus();
-      }, 500);
+      }, 1500); 
     });
   }
 
