@@ -283,6 +283,8 @@
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       socket.emit('start-mic');
+
+      // Handlers for mic logic
       socket.once('mic-ready', () => {
         isBroadcasting = true;
         micPulse.classList.replace('opacity-0', 'opacity-100');
@@ -294,8 +296,22 @@
         mediaRecorder.ondataavailable = async (e) => { if (e.data.size > 0) socket.emit('audio-data', await e.data.arrayBuffer()); };
         mediaRecorder.start(100);
       });
+
+      socket.once('mic-error', (msg) => {
+        if (typeof showToast === 'function') showToast(msg, 'error');
+        else alert('Error: ' + msg);
+        
+        // Cleanup lokal
+        stream.getTracks().forEach(t => t.stop());
+        isBroadcasting = false;
+        
+        // Lepas event listener mic-ready agar tidak dipanggil di masa depan secara tumpang tindih
+        socket.off('mic-ready');
+      });
+
     } catch (err) {
-        showToast('Microphone access denied', 'error');
+        if (typeof showToast === 'function') showToast('Microphone access denied', 'error');
+        else alert('Microphone access denied');
     }
   }
 
