@@ -148,6 +148,27 @@ if (!fsSync.existsSync(BRANDING_FILE)) {
   }, null, 2));
 }
 
+// HELPER: Safe Redirect Back
+const safeRedirect = (req, res, defaultPath, queryParams = {}) => {
+  const referer = req.get('Referer');
+  let target = referer || defaultPath;
+  try {
+    const url = new URL(target, `http://${req.headers.host || 'localhost'}`);
+    // Hapus parameter feedback sebelumnya
+    url.searchParams.delete('msg');
+    url.searchParams.delete('type');
+    url.searchParams.delete('play');
+    url.searchParams.delete('stop');
+    url.searchParams.delete('import');
+    url.searchParams.delete('rename');
+    for (const [k, v] of Object.entries(queryParams)) {
+      url.searchParams.set(k, v);
+    }
+    target = url.pathname + url.search;
+  } catch (e) {}
+  res.redirect(target);
+};
+
 // HELPER: Audit Logs
 const addLog = async (type, message, user = 'System') => {
   try {
@@ -739,7 +760,7 @@ app.post('/schedule/add', requireAuth, async (req, res) => {
     schedules[day].push({ time, sound });
     schedules[day].sort((a, b) => a.time.localeCompare(b.time));
     await fs.writeFile(SCHEDULES_FILE, JSON.stringify(schedules, null, 2));
-    res.redirect('/schedules');
+    safeRedirect(req, res, '/schedules');
   } catch (err) {
     console.error('Add schedule error:', err);
     res.status(500).send('Gagal tambah jadwal');
@@ -755,7 +776,7 @@ app.post('/schedule/remove', requireAuth, async (req, res) => {
     schedules = ensureSchedules(schedules);
     schedules[day].splice(parseInt(index), 1);
     await fs.writeFile(SCHEDULES_FILE, JSON.stringify(schedules, null, 2));
-    res.redirect('/schedules');
+    safeRedirect(req, res, '/schedules');
   } catch (err) {
     console.error('Remove schedule error:', err);
     res.status(500).send('Gagal hapus jadwal');
@@ -765,7 +786,7 @@ app.post('/schedule/remove', requireAuth, async (req, res) => {
 app.post('/schedule/toggle', requireAuth, async (req, res) => {
   // Anti-spam: cegah toggle berulang
   if (toggleBusy) {
-    return res.redirect('/dashboard?msg=Tunggu sebentar sebelum mengubah status scheduler&type=error');
+    return safeRedirect(req, res, '/dashboard', { msg: 'Tunggu sebentar sebelum mengubah status scheduler', type: 'error' });
   }
   toggleBusy = true;
   
@@ -775,7 +796,7 @@ app.post('/schedule/toggle', requireAuth, async (req, res) => {
     schedules.enabled = !schedules.enabled;
     await fs.writeFile(SCHEDULES_FILE, JSON.stringify(schedules, null, 2));
     addLog('system', `Scheduler ${schedules.enabled ? 'diaktifkan' : 'dinonaktifkan'}`, req.session.user.username);
-    res.redirect('/dashboard');
+    safeRedirect(req, res, '/dashboard');
   } catch (err) {
     console.error('Toggle error:', err);
     res.status(500).send('Gagal toggle');
@@ -790,7 +811,7 @@ app.post('/special/add', requireAuth, async (req, res) => {
     const special = JSON.parse(await fs.readFile(SPECIAL_SCHEDULES_FILE, 'utf8'));
     special.push({ date, time, sound });
     await fs.writeFile(SPECIAL_SCHEDULES_FILE, JSON.stringify(special, null, 2));
-    res.redirect('/schedules');
+    safeRedirect(req, res, '/schedules');
   } catch (err) {
     console.error('Add special error:', err);
     res.status(500).send('Gagal tambah jadwal khusus');
@@ -803,7 +824,7 @@ app.post('/special/remove', requireAuth, async (req, res) => {
     const special = JSON.parse(await fs.readFile(SPECIAL_SCHEDULES_FILE, 'utf8'));
     special.splice(parseInt(index), 1);
     await fs.writeFile(SPECIAL_SCHEDULES_FILE, JSON.stringify(special, null, 2));
-    res.redirect('/schedules');
+    safeRedirect(req, res, '/schedules');
   } catch (err) {
     console.error('Remove special error:', err);
     res.status(500).send('Gagal hapus jadwal khusus');
@@ -825,7 +846,7 @@ app.post('/schedule/edit', requireAuth, async (req, res) => {
     schedules[day].sort((a, b) => a.time.localeCompare(b.time));
     await fs.writeFile(SCHEDULES_FILE, JSON.stringify(schedules, null, 2));
     addLog('config', `Jadwal ${day} #${idx} diubah: ${time} → ${sound}`, req.session.user.username);
-    res.redirect('/schedules');
+    safeRedirect(req, res, '/schedules');
   } catch (err) {
     console.error('Edit schedule error:', err);
     res.status(500).send('Gagal edit jadwal');
@@ -843,7 +864,7 @@ app.post('/special/edit', requireAuth, async (req, res) => {
     special[idx] = { date, time, sound };
     await fs.writeFile(SPECIAL_SCHEDULES_FILE, JSON.stringify(special, null, 2));
     addLog('config', `Jadwal khusus #${idx} diubah: ${date} ${time} → ${sound}`, req.session.user.username);
-    res.redirect('/schedules');
+    safeRedirect(req, res, '/schedules');
   } catch (err) {
     console.error('Edit special error:', err);
     res.status(500).send('Gagal edit jadwal khusus');
@@ -852,7 +873,7 @@ app.post('/special/edit', requireAuth, async (req, res) => {
 
 // 🔊 Upload musik — pakai uploadAudio
 app.post('/upload', requireAuth, uploadAudio.single('audiofile'), (req, res) => {
-  res.redirect('/audio');
+  safeRedirect(req, res, '/audio');
 });
 
 // API: Set Quick Call File
@@ -864,7 +885,7 @@ app.post('/config/quick-call', requireAuth, async (req, res) => {
     schedules.quickCallFile = filename;
     await fs.writeFile(SCHEDULES_FILE, JSON.stringify(schedules, null, 2));
     addLog('system', `Pintasan Panggilan Ketua Kelas diatur ke: ${filename}`, req.session.user.username);
-    res.redirect('/audio');
+    safeRedirect(req, res, '/audio');
   } catch (err) {
     console.error('Config error:', err);
     res.status(500).send('Gagal mengatur pintasan');
@@ -874,13 +895,13 @@ app.post('/config/quick-call', requireAuth, async (req, res) => {
 // 🗑️ Hapus musik
 app.post('/music/delete', requireAuth, async (req, res) => {
   const file = path.basename(req.body.file || '');
-  if (!file) return res.redirect('/dashboard');
+  if (!file) return safeRedirect(req, res, '/audio');
   try {
     await fs.unlink(path.join(MUSIC_DIR, file));
-    res.redirect('/audio');
+    safeRedirect(req, res, '/audio');
   } catch (e) {
     console.error('Delete error:', e);
-    res.redirect('/dashboard');
+    safeRedirect(req, res, '/audio', { msg: 'Gagal menghapus file', type: 'error' });
   }
 });
 
@@ -889,13 +910,13 @@ app.post('/rename', requireAuth, async (req, res) => {
   const newname = path.basename(req.body.newname || '');
   if (!oldname || !newname) return res.status(400).send('Nama diperlukan');
   if (!/^[a-zA-Z0-9._-]+$/.test(newname)) return res.status(400).send('Nama tidak valid');
-  if (newname === oldname) return res.redirect('/dashboard');
+  if (newname === oldname) return safeRedirect(req, res, '/audio');
   try {
     await fs.rename(path.join(MUSIC_DIR, oldname), path.join(MUSIC_DIR, newname));
-    res.redirect('/audio?rename=success');
+    safeRedirect(req, res, '/audio', { rename: 'success' });
   } catch (err) {
     console.error('Rename error:', err);
-    res.redirect('/dashboard?rename=error');
+    safeRedirect(req, res, '/audio', { rename: 'error' });
   }
 });
 
@@ -910,11 +931,11 @@ app.post('/play', requireAuth, (req, res) => {
   
   // Anti-spam: cegah spam klik play
   if (playBusy) {
-    return res.redirect('/dashboard?msg=Sistem sedang memproses, tunggu sebentar&type=error');
+    return safeRedirect(req, res, '/dashboard', { msg: 'Sistem sedang memproses, tunggu sebentar', type: 'error' });
   }
   
   if (isAudioPlaying) {
-    return res.redirect('/dashboard?msg=Sistem sedang memutar audio lain&type=error');
+    return safeRedirect(req, res, '/dashboard', { msg: 'Sistem sedang memutar audio lain', type: 'error' });
   }
 
   // Set mutex segera SEBELUM playSound (tutup race condition window)
@@ -928,13 +949,13 @@ app.post('/play', requireAuth, (req, res) => {
   // Beri cooldown sebelum bisa play lagi
   setTimeout(() => { playBusy = false; }, PLAY_COOLDOWN_MS);
   
-  res.redirect('/dashboard?play=success');
+  safeRedirect(req, res, '/dashboard', { play: 'success' });
 });
 
 app.post('/stop', requireAuth, (req, res) => {
   // Anti-spam: cegah spam klik stop
   if (stopBusy) {
-    return res.redirect('/dashboard?msg=Proses penghentian sedang berjalan, tunggu sebentar&type=error');
+    return safeRedirect(req, res, '/dashboard', { msg: 'Proses penghentian sedang berjalan, tunggu sebentar', type: 'error' });
   }
   stopBusy = true;
   
@@ -983,7 +1004,7 @@ app.post('/stop', requireAuth, (req, res) => {
 
     addLog('audio', `Semua audio dihentikan manual`, req.session.user.username);
 
-    res.redirect('/dashboard?stop=success');
+    safeRedirect(req, res, '/dashboard', { stop: 'success' });
   } catch (err) {
     console.error('Stop error:', err);
     // Even on error, force kill everything
@@ -996,7 +1017,7 @@ app.post('/stop', requireAuth, (req, res) => {
     liveMicProcess = null;
     liveMicFfmpeg = null;
     playBusy = false;
-    res.redirect('/dashboard?stop=error');
+    safeRedirect(req, res, '/dashboard', { stop: 'error' });
   } finally {
     setTimeout(() => { stopBusy = false; }, STOP_COOLDOWN_MS);
   }
@@ -1043,12 +1064,12 @@ app.post('/import', requireAuth, uploadJson.single('importfile'), async (req, re
       await fs.writeFile(SPECIAL_SCHEDULES_FILE, JSON.stringify(data.special, null, 2));
     }
     await fs.unlink(req.file.path);
-    res.redirect('/dashboard?import=success');
+    safeRedirect(req, res, '/dashboard', { import: 'success' });
   } catch (e) {
     console.error('Import error:', e);
     // Cleanup if file still exists
     try { if (req.file && req.file.path) await fs.unlink(req.file.path); } catch (cleanErr) {}
-    res.redirect('/dashboard?import=error');
+    safeRedirect(req, res, '/dashboard', { import: 'error' });
   }
 });
 
