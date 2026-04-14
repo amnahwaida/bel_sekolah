@@ -2,6 +2,7 @@ const CACHE_NAME = 'bel-sekolah-v1';
 const ASSETS_TO_CACHE = [
   '/dashboard',
   '/manifest.json',
+  '/pwa-icon.svg',
   '/icon-192.png',
   '/icon-512.png',
   'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&display=swap'
