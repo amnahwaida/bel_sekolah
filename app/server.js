@@ -1067,15 +1067,15 @@ app.post('/stop', requireAuth, (req, res) => {
       try { liveMicFfmpeg.stdout.unpipe(liveMicProcess.stdin); } catch (e) {}
     }
 
-    // Step 2: Force-kill all processes with SIGKILL (not SIGTERM)
-    if (activeAudioProcess) { try { activeAudioProcess.kill('SIGKILL'); } catch (e) {} }
-    if (activeFfmpegProcess) { try { activeFfmpegProcess.kill('SIGKILL'); } catch (e) {} }
-    if (liveMicProcess) { try { liveMicProcess.kill('SIGKILL'); } catch (e) {} }
-    if (liveMicFfmpeg) { try { liveMicFfmpeg.stdin.end(); } catch (e) {} try { liveMicFfmpeg.kill('SIGKILL'); } catch (e) {} }
+    // Step 2: Kill all processes with SIGTERM first (graceful)
+    if (activeAudioProcess) { try { activeAudioProcess.kill('SIGTERM'); } catch (e) {} }
+    if (activeFfmpegProcess) { try { activeFfmpegProcess.kill('SIGTERM'); } catch (e) {} }
+    if (liveMicProcess) { try { liveMicProcess.kill('SIGTERM'); } catch (e) {} }
+    if (liveMicFfmpeg) { try { liveMicFfmpeg.stdin.end(); } catch (e) {} try { liveMicFfmpeg.kill('SIGTERM'); } catch (e) {} }
     
-    // Step 3: Immediate pkill safeguard (don't wait)
-    spawn('pkill', ['-9', '-f', 'aplay']);
-    spawn('pkill', ['-9', '-f', 'ffmpeg']);
+    // Step 3: Immediate pkill safeguard (polite terminate)
+    spawn('pkill', ['-15', '-f', 'aplay']);
+    spawn('pkill', ['-15', '-f', 'ffmpeg']);
     
     // Step 4: Reset ALL state
     isAudioPlaying = false;
@@ -1106,9 +1106,13 @@ app.post('/stop', requireAuth, (req, res) => {
     safeRedirect(req, res, '/dashboard', { stop: 'success' });
   } catch (err) {
     console.error('Stop error:', err);
-    // Even on error, force kill everything
-    spawn('pkill', ['-9', '-f', 'aplay']);
-    spawn('pkill', ['-9', '-f', 'ffmpeg']);
+    // Even on error, polite terminate then force kill later
+    spawn('pkill', ['-15', '-f', 'aplay']);
+    spawn('pkill', ['-15', '-f', 'ffmpeg']);
+    setTimeout(() => {
+      spawn('pkill', ['-9', '-f', 'aplay']);
+      spawn('pkill', ['-9', '-f', 'ffmpeg']);
+    }, 2000);
     isAudioPlaying = false;
     activeAudioName = null;
     activeAudioProcess = null;
@@ -1689,27 +1693,27 @@ io.on('connection', (socket) => {
       try { liveMicFfmpeg.stdout.unpipe(liveMicProcess.stdin); } catch (e) {}
     }
 
-    // Step 2: Close ffmpeg stdin gracefully, then force kill
+    // Step 2: Close ffmpeg stdin gracefully, then polite kill
     if (liveMicFfmpeg) {
       try { liveMicFfmpeg.stdin.end(); } catch (e) {}
-      try { liveMicFfmpeg.kill('SIGKILL'); } catch (e) {}
+      try { liveMicFfmpeg.kill('SIGTERM'); } catch (e) {}
       liveMicFfmpeg = null;
     }
 
-    // Step 3: Kill aplay
+    // Step 3: Kill aplay polite
     if (liveMicProcess) {
-      try { liveMicProcess.kill('SIGKILL'); } catch (e) {}
+      try { liveMicProcess.kill('SIGTERM'); } catch (e) {}
       liveMicProcess = null;
     }
 
     // Step 4: Safeguard — kill any lingering aplay/ffmpeg child processes
-    // This is critical to free the audio device /dev/snd/*
-    try {
-      spawn('pkill', ['-f', 'aplay.*plughw']);
-    } catch (e) {}
-    try {
-      spawn('pkill', ['-f', 'ffmpeg.*pipe']);
-    } catch (e) {}
+    // HANYA JIKA sedang siaran langsung (cegah bug bel mati jika tab ditutup saat bel normal berbunyi)
+    if (activeAudioName === "SIARAN LANGSUNG") {
+      try {
+        spawn('pkill', ['-15', '-f', 'aplay.*plughw']);
+        spawn('pkill', ['-15', '-f', 'ffmpeg.*pipe']);
+      } catch (e) {}
+    }
 
     // Step 5: Reset global audio state
     if (isAudioPlaying && activeAudioName === "SIARAN LANGSUNG") {
