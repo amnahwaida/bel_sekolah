@@ -73,7 +73,7 @@ const writeRelay = async (cmd, retries = 3) => {
 };
 
 // Delay sebelum play (ms)
-const AMP_WARMUP = 3000;
+const AMP_WARMUP = 6500; // warmup 6.5 detik agar ampli sepenuhnya aktif dan tidak ada fade in hardware
 
 const app = express();
 const server = http.createServer(app);
